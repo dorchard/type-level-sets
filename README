@@ -3,7 +3,7 @@ subsets, and split sets. Also included is a "mapping" type constructor that pair
 sets of variable-type pairs, which is used in the paper "Embedding effect systems in Haskell" (Dominic Orchard, 
 Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf>) to embed effect sets. 
 
-A full example can be seen in 'example.hs'. Here is a shorter version:
+The following shows an example: 
 
 	{-# LANGUAGE DataKinds, TypeOperators #-}
 

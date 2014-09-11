@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies, 
              MultiParamTypeClasses, FlexibleInstances, PolyKinds, FlexibleContexts,
-             UndecidableInstances, ConstraintKinds, OverlappingInstances, ScopedTypeVariables,
-             AllowAmbiguousTypes #-}
+             UndecidableInstances, ConstraintKinds, OverlappingInstances, ScopedTypeVariables #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append, 
                       Sort, Sortable, Append(..), Split(..), Cmp, 
@@ -110,6 +109,9 @@ instance Nubable '[] where
 
 instance Nubable '[e] where
     nub (Ext x Empty) = Ext x Empty
+
+instance Nubable (e ': s) => Nubable (e ': e ': s) where
+    nub (Ext _ (Ext e s)) = nub (Ext e s)
 
 instance (Nub (e ': f ': s) ~ (e ': Nub (f ': s)), 
               Nubable (f ': s)) => Nubable (e ': f ': s) where
