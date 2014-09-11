@@ -3,34 +3,32 @@ subsets, and split sets. Also included is a "mapping" type constructor that pair
 sets of variable-type pairs, which is used in the paper "Embedding effect systems in Haskell" (Dominic Orchard, 
 Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf>) to embed effect sets. 
 
-Here is some example code!
+A full example can be seen in 'example.hs'. Here is a shorter version:
 
-<code>
 	{-# LANGUAGE DataKinds, TypeOperators #-}
 
 	import Data.Type.Set
 
-	-- foo :: Set '["x" :-> Integer, "z" :-> Integer]
+	-- foo :: Set '["x" :-> Int, "z" :-> Int]
 	foo = Ext ((Var :: (Var "x")) :-> 2) $
 	       Ext ((Var :: (Var "z")) :-> 4) $
-	                Empty 
+	         Empty 
 
-	-- bar :: Set '["y" :-> Integer, "w" :-> Integer]
+	-- bar :: Set '["y" :-> Int, "w" :-> Int]
 	bar = Ext ((Var :: (Var "y")) :-> 3) $
        	      	  Ext ((Var :: (Var "w")) :-> 1) $
 	               Empty 
 
-	-- foobar :: Set '["w" :-> Integer, "x" :-> Integer, "y" :-> Integer, "z" :-> Integer]
+	-- foobar :: Set '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
 	foobar = foo `union` bar
-</code>
 
-Note, the type signatures are commented out here as they can be inferred. 
+Note, that 'foobar' shows the sorted 
+the type signatures are commented out here as they can be inferred. 
 Example execution:
 
-<code>
 	*Main> foobar	
 	{(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)}
-</code>
+
 
 
 
