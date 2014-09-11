@@ -1,0 +1,61 @@
+name:                   type-level-sets
+version:                0.5
+synopsis:               Type-level sets (with value-level counterparts and various operations)
+description:            
+   This package provides type-level sets (no duplicates, sorted to provide a nomral form) via 'Set', 
+   with value-level counterparts. Described in the paper "Embedding effect systems in Haskell" by Dominic Orchard 
+   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf>
+   .
+   Here is a brief example: 
+   .
+   >
+   > import Data.Type.Set
+   >
+   > foo :: Set '["x" :-> Int, "z" :-> Int, "w" :-> Int]
+   > foo = Ext ((Var :: (Var "x")) :-> 2) $
+   >         Ext ((Var :: (Var "z")) :-> 4) $
+   >           Ext ((Var :: (Var "w")) :-> 5) $
+   >             Empty 
+   >
+   > bar :: Set '["y" :-> Int, "w" :-> Int]
+   > bar = Ext ((Var :: (Var "y")) :-> 3) $
+   >         Ext ((Var :: (Var "w")) :-> 1) $
+   >           Empty
+   >  
+   > -- foobar :: Set '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
+   > foobar = foo `union` bar
+   .
+   The 'Set' type for 'foobar' here shows the normalised form (sorted with no duplicates).
+   The type signatures is commented out as it can be infered. Running the example we get:
+   .
+   > >>> foobar	
+   > [(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)]
+   .
+   Thus, we see that the first value paired with the \"w\" variable is dropped.
+   .
+license:                BSD3
+license-file:           LICENSE
+category:               Type System, Data Structures
+copyright:              2013-14 University of Cambridge
+author:                 Dominic Orchard
+maintainer:             Dominic Orchard
+stability:              experimental
+build-type:             Simple
+cabal-version:          >= 1.6
+tested-with:            GHC == 7.8.2
+
+extra-source-files:     example.hs
+
+
+source-repository head
+  type: git
+  location: https://github.com/dorchard/type-level-sets
+
+library
+  hs-source-dirs:       src
+
+
+  exposed-modules:      Data.Type.Set
+                        
+  build-depends:        base < 5,
+                        ghc-prim

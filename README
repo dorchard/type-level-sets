@@ -29,7 +29,7 @@ The type signatures is commented out as it can be infered. Running the example w
 	*Main> foobar	
 	{(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)}
 
-Thus, we see that the first value for "w" is dropped.
+Thus, we see that the first value paired with the "w" variable is dropped.
 
 
 
