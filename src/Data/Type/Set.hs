@@ -5,7 +5,8 @@
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append, 
                       Sort, Sortable, Append(..), Split(..), Cmp, 
-                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..)) where
+                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
+                      (:->)(..), Var(..)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -196,11 +197,16 @@ data Var (k :: Symbol) where Var :: Var k
 instance (Show (Var k), Show v) => Show (k :-> v) where
     show (k :-> v) = "(" ++ show k ++ " :-> " ++ show v ++ ")"
 instance Show (Var "x") where
-    show _ = "x"
+    show X   = "x"
+    show Var = "Var"
 instance Show (Var "y") where
-    show _ = "y"
+    show Y   = "y"
+    show Var = "Var"
 instance Show (Var "z") where
-    show _ = "z"
+    show Z   = "z"
+    show Var = "Var"
+instance Show (Var v) where
+    show _ = "Var"
 
 {-| Symbol comparison -}
 type instance Cmp (v :-> a) (u :-> b) = CmpSymbol v u
