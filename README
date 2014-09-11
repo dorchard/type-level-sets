@@ -9,12 +9,13 @@ The following shows an example:
 
 	import Data.Type.Set
 
-	-- foo :: Set '["x" :-> Int, "z" :-> Int]
+	foo :: Set '["x" :-> Int, "z" :-> Int, "w" :-> Int]
 	foo = Ext ((Var :: (Var "x")) :-> 2) $
 	       Ext ((Var :: (Var "z")) :-> 4) $
+	        Ext ((Var :: (Var "w")) :-> 5) $
 	         Empty 
 
-	-- bar :: Set '["y" :-> Int, "w" :-> Int]
+	bar :: Set '["y" :-> Int, "w" :-> Int]
 	bar = Ext ((Var :: (Var "y")) :-> 3) $
        	      	  Ext ((Var :: (Var "w")) :-> 1) $
 	               Empty 
@@ -22,13 +23,13 @@ The following shows an example:
 	-- foobar :: Set '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
 	foobar = foo `union` bar
 
-Note, that 'foobar' shows the sorted 
-the type signatures are commented out here as they can be inferred. 
-Example execution:
+The 'Set' type for 'foobar' here shows the normalised form (sorted with no duplicates).
+The type signatures is commented out as it can be infered. Running the example we get:
 
 	*Main> foobar	
 	{(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)}
 
+Thus, we see that the first value for "w" is dropped.
 
 
 
