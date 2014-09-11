@@ -3,8 +3,8 @@ version:                0.5
 synopsis:               Type-level sets (with value-level counterparts and various operations)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a nomral form) via 'Set', 
-   with value-level counterparts. Described in the paper "Embedding effect systems in Haskell" by Dominic Orchard 
-   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf>
+   with value-level counterparts. Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
+   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014)
    .
    Here is a brief example: 
    .
