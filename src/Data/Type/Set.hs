@@ -185,12 +185,12 @@ instance Conder False where
 
 type family Cmp (a :: k) (b :: k) :: Ordering
 
-{-| Pair a symbol (represetning a variable) with a type -}
+{-| Pair a symbol (representing a variable) with a type -}
 infixl 2 :->
 data (k :: Symbol) :-> (v :: *) = (Var k) :-> v
 
 data Var (k :: Symbol) where Var :: Var k 
-                             {-| Some special defaults for some common names -}
+                             {- Some special defaults for some common names -}
                              X   :: Var "x"
                              Y   :: Var "y"
                              Z   :: Var "z"
