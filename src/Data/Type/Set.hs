@@ -125,8 +125,8 @@ class Subset s t where
 instance Subset '[] '[] where 
    subset xs = Empty
 
-instance Subset '[] (x ': t) where 
-   subset xs = Empty
+instance Subset s t => Subset s (x ': t) where
+   subset (Ext _ xs) = subset xs
 
 instance Subset s t => Subset (x ': s) (x ': t) where
    subset (Ext x xs) = Ext x (subset xs)
