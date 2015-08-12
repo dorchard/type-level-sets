@@ -1,5 +1,5 @@
 -- {-# OPTIONS_GHC -package=ghc-7.10.1 #-}
-{-# LANGUAGE TypeFamilies, DataKinds, PolyKinds, StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies, DataKinds, PolyKinds, StandaloneDeriving, TypeOperators #-}
 
 module TySet(plugin, Set, Union) where
 
@@ -49,6 +49,11 @@ data Set (a :: [k])
 {- Union operation -}
 type family Union (a :: [k]) (b :: [k]) :: [k]
 
+type family Member (a :: k) (b :: [k]) :: Bool where
+            Member x '[]       = False
+            Member x (x ': xs) = True
+            Member x (y ': xs) = Member x xs           
+
 {- Plugin setup -}
 plugin :: Plugin
 plugin = defaultPlugin { tcPlugin = Just . thePlugin }
@@ -94,6 +99,41 @@ isEmptySetType t = do (x, tcs) <- splitTyConApp_maybe t
                                            guard $ (getOccString . tyConName $ con) == "[]"
                                   _ -> Nothing
 
+getNameStr = getOccString . tyConName
+
+isUnion :: Type -> Bool
+isUnion t = case splitTyConApp_maybe t of
+               Just (x, tcs) -> (getOccString . tyConName $ x) == "Union"
+               _             -> False
+               
+-- splitUnion :: Type -> ([Type], [Type])
+splitUnion t = do (x, tcs) <- splitTyConApp_maybe t
+                  guard $ (getOccString . tyConName $ x) == "Union"
+                   
+splitList t = do (tcon, args) <- splitTyConApp_maybe t
+                 case getNameStr tcon of 
+                   ":" -> do guard $ (length args >= 2)
+                             (t1 : (t2 : ts)) <- return args 
+                             (kind, emptyArgs) <- splitTyConApp_maybe $ t1
+                             guard $ emptyArgs == []
+                              -- maybe be unnecessary and even restrictive
+                             guard $ getNameStr kind == "*"
+                             ts' <- splitList ts
+                             return $ (t2 : ts')
+                   "[]" -> do guard $ (length args == 1) 
+                              [t] <- return args
+                              (kind, emptyArgs) <- splitTyConApp_maybe $ t
+                              -- maybe be unnecessary and even restrictive
+                              guard $ getNameStr kind == "*"
+                              guard $ emptyArgs == []
+                              return $ []
+                   _    -> Nothing
+
+unionSingle t = do (x, tcs) <- splitTyConApp_maybe t
+                   guard $ length tcs == 2
+                   guard $ getName x == "Set"
+                   return ()
+
 {- Experimenting, finds Set '[] ~ Set '[] and returns a refl coercion 
    This was set up before when 'Set' was a type family, but is now redundant
 -}
@@ -103,13 +143,19 @@ findSetEquality (ct : xs) = let x = (do (Nominal,t1,t2) <- getEqPredTys_maybe (c
                                         isEmptySetType t1
                                         isEmptySetType t2
                                         return ((EvCoercion $ TcRefl Nominal t1, ct), t1))
+                                y = do (Nominal,t1,t2) <- getEqPredTys_maybe (ctPred ct)
+                                       return t1
                             in
                                case x of 
                                  Just (ct, tcsA) -> do xs' <- (findSetEquality xs)
                                                        tcPluginTrace "SET" $ ppr $ tcsA
                                                        tcPluginTrace "SET" $ text $ show tcsA
                                                        return $ ct : xs'
-                                 Nothing -> findSetEquality xs
+                                 Nothing -> case y of 
+                                              Just t -> do tcPluginTrace "SET" $ text $ show t
+                                                           return []
+
+                                              Nothing -> findSetEquality xs
 
 pluginStop :: () -> TcPluginM ()
 pluginStop _ = return ()
