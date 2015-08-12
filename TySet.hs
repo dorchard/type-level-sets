@@ -184,9 +184,9 @@ equal t1 t2 = let (vs1, ds1) = normalisedRep t1
                   (vs2, ds2) = normalisedRep t2
               in (vs1 == vs2) && (all (flip elem $ ds2) ds1) && (all (flip elem $ ds1) ds2)
                where        
-                normalisedRep :: TermTree a -> ([String], [a])
+                normalisedRep :: Eq a => TermTree a -> ([String], [a])
                 normalisedRep t = let (vs, ds) = separate t
-                                  in (sort vs, ds)
+                                  in (nub . sort $ vs, nub ds)
 
 separate :: TermTree a -> ([String], [a])
 separate Empty = ([], [])
@@ -197,41 +197,53 @@ separate (Union a b) = let (vs1, ds1) = separate a
                        in (vs1++vs2, ds1++ds2)
 
 {-- Unit testing of normaliser and set equality --}
-equalUnitTest :: IO ()
-equalUnitTest = quickCheck (\((n, m) :: (TermTree Int, TermTree Int)) -> equal n m)
+testSetTermEquality :: IO ()
+testSetTermEquality = quickCheck (\((n, m) :: (TermTree Int, TermTree Int)) -> equal n m)
 
 instance Arbitrary (TermTree Int, TermTree Int) where
-    arbitrary = sized (\vars -> 
-                  sized (\datums -> do v <- (vector vars)::(Gen [String])
-                                       dat <- (vector datums)::(Gen [Int])
-                                       choose <- arbitrary::(Gen Int)
-                                       v' <- shuffle v
-                                       dat' <- shuffle dat
-                                       g1 <- gen v dat
-                                       g2 <- gen v' dat'
-                                       -- soundness of generation test
-                                       let (v0, dat0) = separate g1
-                                           (v1, dat1) = separate g2
-                                       if not( (sort v0 == sort v) && (sort v1 == sort v)
-                                            && (sort dat == sort dat0) && (sort dat == sort dat1)) then return ()
-                                         else error $ "Generated trees failed soundness check: " ++ (show g1) ++ " " ++ (show g2)
-                                       return (g1, g2)))
+    arbitrary = sized $ \vars -> 
+                  sized $ \datums -> 
+                           do v    <- (vector vars)::(Gen [String])
+                              dat  <- (vector datums)::(Gen [Int])
+                              v'   <- shuffle v
+                              dat' <- shuffle dat
+                              g1   <- gen v dat
+                              g2   <- gen v' dat'
+
+                              -- Soundness check on generated tree
+                              let (v0, dat0) = separate g1
+                                  (v1, dat1) = separate g2
+                                  norm :: (Ord a) => [a] -> [a]
+                                  norm = nub . sort
+
+                              if and [(norm v0) == (norm v), (norm v1) == (norm v), 
+                                      (norm dat) == (norm dat0), (norm dat) == (norm dat1)]
+                                then return ()
+                                else error $ "Generated trees failed soundness check: " ++ (show g1) ++ " " ++ (show g2)
+                              return (g1, g2)
+
+-- Arbitrarily permute a union of two generators
 unionPerm x y = do x' <- x
                    y' <- y
-                   choice <- arbitrary
-                   return $ if choice then (Union x' y') else (Union y' x')
+                   elements [Union x' y', Union y' x']
 
+-- Generates arbitrary terms from a list of variables and list of Int adtums
 gen :: [String] -> [Int] -> Gen (TermTree Int)
 gen []     []   = return $ Empty
-gen (v:vs) []   = unionPerm (gen vs []) (return $ Var v)
-gen []     ds   = do i <- suchThat arbitrary (<= (length ds)) 
-                     unionPerm (gen [] (drop i ds)) (return $ Data (take i ds))
-gen (v:vs) ds   = do choose <- suchThat arbitrary (\x -> x<=2 && x>=0)
+gen vs     ds   = do -- Choose between 0 and 1 if 'vs' is empty, or 0-2 if 'vs' has elements
+                     choose <- suchThat arbitrary (\x -> x<=(2 - if vs == [] then 1 else 0) && x>=0)
                      case choose::Int of 
-                       0 -> unionPerm (gen vs ds) (return $ Var v)
+                       -- Union with Empty
+                       0 -> unionPerm (gen vs ds) (return $ Empty)
+
+                       -- Pick some number of elements (maybe none) and create a data leaf
                        1 -> do i <- suchThat arbitrary (<= (length ds)) 
-                               unionPerm (gen (v:vs) (drop i ds)) (return $ Data (take i ds))
-                       2 -> unionPerm (gen (v:vs) ds) (return $ Empty)
+                               unionPerm (gen vs (drop i ds)) (return $ Data (take i ds))
+
+                       -- Case where vs is non-empty, create a variable node, and either remove that
+                       -- variable, or keep it around as a possibility again to test idempotency
+                       2 -> oneof [unionPerm (gen (tail vs) ds) (return $ Var (head vs)), 
+                                   unionPerm (gen vs ds) (return $ Var (head vs))]
                        _ -> error "unpossible"
                                                      
                                                      
