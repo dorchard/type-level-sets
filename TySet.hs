@@ -72,6 +72,18 @@ pluginSolve () given derived wanted =
        -- For the sake of debugging
        tcPluginIO $ putStrLn "Running Set equality plugin"
        return $ TcPluginOk solved []
+       
+-- Possible eqations for the solver
+-- Union a b ~ a  =>  b ~ '[]
+-- Union a b ~ b  =>  a ~ '[]
+
+-- Union (Union a b) c ~ d  => Union a (Union b c) ~ d
+-- Union '[] a ~ b  => a ~ b
+-- Union a '[] ~ b  => a ~ b
+-- Union a a   ~ b  => a ~ b   (can do in a reduce phases that looks through a tree of union terms..)
+
+-- Reqires an `ordering'
+-- Union a b   ~ c  => Union b a ~ c  [for the purpose of normalisation]
 
 -- Pretty print constraints
 ppCts [] = text "(empty)"
