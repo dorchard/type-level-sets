@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies, 
              MultiParamTypeClasses, FlexibleInstances, PolyKinds, FlexibleContexts,
-             UndecidableInstances, ConstraintKinds, OverlappingInstances, ScopedTypeVariables #-}
+             UndecidableInstances, ConstraintKinds, ScopedTypeVariables #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append, 
                       Sort, Sortable, Append(..), Split(..), Cmp, 
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      (:->)(..), Var(..)) where
+                      (:->)(..), Var(..), Delete(..)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -143,6 +143,15 @@ type family Filter (f :: Flag) (p :: k) (xs :: [k]) :: [k] where
             Filter f p '[]       = '[]
             Filter FMin p (x ': xs) = If (Cmp x p == LT) (x ': (Filter FMin p xs)) (Filter FMin p xs) 
             Filter FMax p (x ': xs) = If (Cmp x p == GT || Cmp x p == EQ) (x ': (Filter FMax p xs)) (Filter FMax p xs) 
+
+type family DeleteFromList (e :: elem) (list :: [elem]) where
+    DeleteFromList elem '[] = '[]
+    DeleteFromList elem (x ': xs) = If (Cmp elem x == EQ)
+                                       xs
+                                       (x ': DeleteFromList elem xs)
+
+type family Delete elem set where
+    Delete elem (Set xs) = Set (DeleteFromList elem xs)
 
 {-| Value-level quick sort that respects the type-level ordering -}
 class Sortable xs where
