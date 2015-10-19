@@ -1,5 +1,5 @@
 name:                   type-level-sets
-version:                0.5
+version:                0.5.1
 synopsis:               Type-level sets (with value-level counterparts and various operations)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a nomral form) via 'Set', 
