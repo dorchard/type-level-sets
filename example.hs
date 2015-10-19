@@ -8,6 +8,7 @@ foo = Ext ((Var :: (Var "x")) :-> 2) $
         Ext ((Var :: (Var "w")) :-> 5) $
          Empty 
 
+
 bar :: Set '["y" :-> Int, "w" :-> Int]
 bar = Ext ((Var :: (Var "y")) :-> 3) $
        Ext ((Var :: (Var "w")) :-> 1) $

@@ -10,7 +10,8 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
-import Data.Proxy
+
+data Proxy (p :: k) = Proxy
 
 {-| Core Set definition, in terms of lists -}
 data Set (n :: [*]) where
