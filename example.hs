@@ -1,17 +1,24 @@
-{-# LANGUAGE DataKinds, TypeOperators #-}
+{-# LANGUAGE DataKinds, TypeOperators, KindSignatures, TypeFamilies, MultiParamTypeClasses #-}
 
-import Data.Type.Set
+import GHC.TypeLits
+import Data.Type.Map
 
-foo :: Set '["x" :-> Int, "z" :-> Int, "w" :-> Int]
-foo = Ext ((Var :: (Var "x")) :-> 2) $
-       Ext ((Var :: (Var "z")) :-> 4) $
-        Ext ((Var :: (Var "w")) :-> 5) $
+-- Specify that key-value pairs on Ints combine to an Int
+type instance Combine Int Int = Int
+-- Specify that Int values for matching keys should be added
+instance Combinable Int Int where
+    combine x y = x + y
+                             
+foo :: Map '["x" :-> Int, "z" :-> Int, "w" :-> Int]
+foo = Ext (Var :: (Var "x")) 2 $
+       Ext (Var :: (Var "z")) 4 $
+        Ext (Var :: (Var "w")) 5 $
          Empty 
 
 
-bar :: Set '["y" :-> Int, "w" :-> Int]
-bar = Ext ((Var :: (Var "y")) :-> 3) $
-       Ext ((Var :: (Var "w")) :-> 1) $
+bar :: Map '["y" :-> Int, "w" :-> Int]
+bar = Ext (Var :: (Var "y")) 3 $
+       Ext (Var :: (Var "w")) 1 $
          Empty 
 
 -- GHC can easily infer this type, so an explicit signature not necessary

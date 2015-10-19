@@ -1,15 +1,17 @@
 name:                   type-level-sets
-version:                0.5.1
-synopsis:               Type-level sets (with value-level counterparts and various operations)
+version:                0.6
+synopsis:               Type-level sets and finite maps (with value-level counterparts and various operations)
 description:            
-   This package provides type-level sets (no duplicates, sorted to provide a nomral form) via 'Set', 
-   with value-level counterparts. Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
+   This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
+   maps via 'Map', with value-level counterparts.
+   .
+   Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
    and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014)
    .
    Here is a brief example: 
    .
    >
-   > import Data.Type.Set
+   > import Data.Type.Map
    >
    > foo :: Set '["x" :-> Int, "z" :-> Int, "w" :-> Int]
    > foo = Ext ((Var :: (Var "x")) :-> 2) $
@@ -56,6 +58,7 @@ library
 
 
   exposed-modules:      Data.Type.Set
+                        Data.Type.Map
                         
   build-depends:        base >= 4.7.0.0 && < 5,
                         ghc-prim

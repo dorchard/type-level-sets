@@ -3,9 +3,8 @@
              UndecidableInstances, ConstraintKinds, ScopedTypeVariables #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append, 
-                      Sort, Sortable, Append(..), Split(..), Cmp, 
-                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      (:->)(..), Var(..), Delete(..)) where
+                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..), 
+                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..), Delete(..), Proxy(..)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -13,9 +12,11 @@ import Data.Type.Equality
 
 data Proxy (p :: k) = Proxy
 
-{-| Core Set definition, in terms of lists -}
+-- Value-level 'Set' representation,  essentially a list 
 data Set (n :: [*]) where
+    {-| Construct an empty set-}
     Empty :: Set '[]
+    {-| Extend a set with an element -}
     Ext :: e -> Set s -> Set (e ': s)
 
 instance Show (Set '[]) where
@@ -50,24 +51,21 @@ type SetProperties f = (Union f '[] ~ f, Split f '[] f,
 {-- Union --}
 
 {-| Union of sets -}
-type Union s t = Nub (Sort (Append s t))
+type Union s t = Nub (Sort (s :++ t))
 
 union :: (Unionable s t) => Set s -> Set t -> Set (Union s t)
 union s t = nub (quicksort (append s t))
 
-type Unionable s t = (Sortable (Append s t), Nubable (Sort (Append s t)))
+type Unionable s t = (Sortable (s :++ t), Nubable (Sort (s :++ t)))
 
 {-| List append (essentially set disjoint union) -}
-type family Append (s :: [k]) (t :: [k]) :: [k] where
-            Append '[] t = t
-            Append (x ': xs) ys = x ': (Append xs ys)
+type family (:++) (x :: [k]) (y :: [k]) :: [k] where
+            '[]       :++ xs = xs
+            (x ': xs) :++ ys = x ': (xs :++ ys)
 
-append :: Set s -> Set t -> Set (Append s t)
+append :: Set s -> Set t -> Set (s :++ t)
 append Empty x = x
 append (Ext e xs) ys = Ext e (append xs ys)
-
-{-| Useful alias for append -}
-type (s :: [k]) :++ (t :: [k]) = Append s t
 
 {-| Splitting a union a set, given the sets we want to split it into -}
 class Split s t st where
@@ -195,30 +193,3 @@ instance Conder False where
 
 type family Cmp (a :: k) (b :: k) :: Ordering
 
-{-| Pair a symbol (representing a variable) with a type -}
-infixl 2 :->
-data (k :: Symbol) :-> (v :: *) = (Var k) :-> v
-
-data Var (k :: Symbol) where Var :: Var k 
-                             {- Some special defaults for some common names -}
-                             X   :: Var "x"
-                             Y   :: Var "y"
-                             Z   :: Var "z"
-
-
-instance (Show (Var k), Show v) => Show (k :-> v) where
-    show (k :-> v) = "(" ++ show k ++ " :-> " ++ show v ++ ")"
-instance Show (Var "x") where
-    show X   = "x"
-    show Var = "Var"
-instance Show (Var "y") where
-    show Y   = "y"
-    show Var = "Var"
-instance Show (Var "z") where
-    show Z   = "z"
-    show Var = "Var"
-instance Show (Var v) where
-    show _ = "Var"
-
-{-| Symbol comparison -}
-type instance Cmp (v :-> a) (u :-> b) = CmpSymbol v u
