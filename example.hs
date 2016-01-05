@@ -22,5 +22,5 @@ bar = Ext (Var :: (Var "y")) 3 $
          Empty 
 
 -- GHC can easily infer this type, so an explicit signature not necessary
--- foobar :: Set '["w" :-> Int, "x" :-> Int, "y" :-> Integer, "z" :-> Int]
+-- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Integer, "z" :-> Int]
 foobar = foo `union` bar

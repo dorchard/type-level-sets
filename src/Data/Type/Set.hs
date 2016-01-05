@@ -14,9 +14,9 @@ data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list 
 data Set (n :: [*]) where
-    {-| Construct an empty set-}
-    Empty :: Set '[]
-    {-| Extend a set with an element -}
+    {--| Construct an empty set -}
+    Empty :: Set '[]   
+    {--| Extend a set with an element -}
     Ext :: e -> Set s -> Set (e ': s)
 
 instance Show (Set '[]) where
@@ -112,7 +112,7 @@ instance Nubable '[e] where
 instance Nubable (e ': s) => Nubable (e ': e ': s) where
     nub (Ext _ (Ext e s)) = nub (Ext e s)
 
-instance (Nub (e ': f ': s) ~ (e ': Nub (f ': s)), 
+instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)), 
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext e (Ext f s)) = Ext e (nub (Ext f s))
 

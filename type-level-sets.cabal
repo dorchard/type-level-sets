@@ -1,30 +1,30 @@
 name:                   type-level-sets
-version:                0.6
-synopsis:               Type-level sets and finite maps (with value-level counterparts and various operations)
+version:                0.6.1
+synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
-   maps via 'Map', with value-level counterparts.
+   finite maps via 'Map', with value-level counterparts.
    .
    Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
-   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014)
+   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.
    .
-   Here is a brief example: 
+   Here is a brief example for finite maps.: 
    .
    >
    > import Data.Type.Map
    >
-   > foo :: Set '["x" :-> Int, "z" :-> Int, "w" :-> Int]
+   > foo :: Map '["x" :-> Int, "z" :-> Int, "w" :-> Int]
    > foo = Ext ((Var :: (Var "x")) :-> 2) $
    >         Ext ((Var :: (Var "z")) :-> 4) $
    >           Ext ((Var :: (Var "w")) :-> 5) $
    >             Empty 
    >
-   > bar :: Set '["y" :-> Int, "w" :-> Int]
+   > bar :: Map '["y" :-> Int, "w" :-> Int]
    > bar = Ext ((Var :: (Var "y")) :-> 3) $
    >         Ext ((Var :: (Var "w")) :-> 1) $
    >           Empty
    >  
-   > -- foobar :: Set '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
+   > -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
    > foobar = foo `union` bar
    .
    The 'Set' type for 'foobar' here shows the normalised form (sorted with no duplicates).
@@ -34,11 +34,31 @@ description:
    > [(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)]
    .
    Thus, we see that the first value paired with the \"w\" variable is dropped.
+   For sets, here is an example:
+   .
+   > import GHC.TypeLits
+   > import Data.Type.Set
+   > type instance Cmp (Natural n) (Natural m) = CmpNat n m
+   >
+   > data Natural (a :: Nat) where
+   >   Z :: Natural 0
+   >   S :: Natural n -> Natural (n + 1)
+   > 
+   > -- foo :: Set '[Natural 0, Natural 1, Natural 3]
+   > foo = asSet $ Ext (S Z) (Ext (S (S (S Z))) (Ext Z Empty))
+   >
+   > -- bar :: Set '[Natural 1, Natural 2]
+   > bar = asSet $ Ext (S (S Z)) (Ext (S Z) (Ext (S Z) Empty))
+   >
+   > -- foobar :: Set '[Natural 0, Natural 1, Natural 2, Natural 3]
+   > foobar = foo `union` bar
+   .
+   Note the types here are all inferred.
    .
 license:                BSD3
 license-file:           LICENSE
 category:               Type System, Data Structures
-copyright:              2013-14 University of Cambridge
+copyright:              2013-16 University of Cambridge
 author:                 Dominic Orchard
 maintainer:             Dominic Orchard
 stability:              experimental
