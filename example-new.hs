@@ -3,31 +3,6 @@
 {-# OPTIONS_GHC -fplugin=TyMap #-}
 import TyMap
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import GHC.TypeLits
 
 

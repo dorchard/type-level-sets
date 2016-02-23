@@ -1,7 +1,7 @@
 -- {-# OPTIONS_GHC -package=ghc-7.10.1 #-}
 {-# LANGUAGE TypeFamilies, DataKinds, PolyKinds, StandaloneDeriving, TypeOperators, FlexibleInstances, ScopedTypeVariables, ImplicitParams, MultiParamTypeClasses #-}
 
-module TySet(plugin, Set, Union, dropPrefix) where
+module TySet(plugin, Set, Union, dropPrefix, ppr) where
 
 import TypeRep
 import Type
@@ -82,17 +82,32 @@ instance Debug String IO where
 pluginInit :: [CommandLineOption] -> TcPluginM ()
 pluginInit _ = return ()
 
+printerS = let ?ifDebug = True in tcPluginIO . debug . showSDocUnsafe . ppCts
+printer = let ?ifDebug = True in tcPluginIO . debug 
+
 pluginSolve :: () -> [Ct] -> [Ct] -> [Ct] -> TcPluginM TcPluginResult
 pluginSolve () given derived wanted = 
     let ?ifDebug = True in
 
-    do 
+    do tcPluginIO $ debug "*****************************"
        tcPluginIO $ debug "Running TySet equality plugin"
-       debug $ ppCts wanted 
+       --debug $ ppCts wanted
+       tcPluginIO $ debug $ showSDocUnsafe $ ppCts wanted
+       tcPluginIO $ debug "Givens"
+       --debug $ ppCts given
+       tcPluginIO $ debug $ showSDocUnsafe $ ppCts given
+       tcPluginIO $ debug "Derived"
+       -- debug $ ppCts derived
+       tcPluginIO $ debug $ showSDocUnsafe $ ppCts derived
        -- debug $ ppr $ head $ wanted
 
        --solved <- findEmptySetEquality wanted
        (solved, generated) <- findSetEquality wanted
+       printer "Done - solved"
+       printerS (map snd solved)
+       printer "DOne - generated"
+       printerS generated
+       
        return $ TcPluginOk solved generated
        
 pluginStop :: () -> TcPluginM ()
@@ -288,7 +303,7 @@ testSetTermEquality = quickCheck (\((n, m) :: (TermTree Int, TermTree Int)) -> n
 mkVar :: String -> Var
 mkVar = undefined
 
-instance Arbitrary (TermTree Int, TermTree Int) where
+instance {-# OVERLAPS #-} Arbitrary (TermTree Int, TermTree Int) where
     arbitrary = sized $ \vars -> 
                   sized $ \datums -> 
                            do v0    <- (vector vars)::(Gen [String])
@@ -334,10 +349,6 @@ gen vs     ds   = do -- Choose between 0 and 1 if 'vs' is empty, or 0-2 if 'vs' 
                        2 -> oneof [unionPerm (gen (tail vs) ds) (return $ Var (head vs)), 
                                    unionPerm (gen vs ds) (return $ Var (head vs))]
                        _ -> error "unpossible"
-                                                     
-                                                     
-                                           
-                                           
                                          
                                          
                                              

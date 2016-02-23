@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds, TypeOperators, KindSignatures, TypeFamilies, MultiParamTypeClasses #-}
 
 import GHC.TypeLits
+import Data.Type.Set (subset)
 import Data.Type.Map
 
 -- Specify that key-value pairs on Ints combine to an Int
@@ -24,3 +25,6 @@ bar = Ext (Var :: (Var "y")) 3 $
 -- GHC can easily infer this type, so an explicit signature not necessary
 -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Integer, "z" :-> Int]
 foobar = foo `union` bar
+
+foobarToFoo :: Map '["x" :-> Int, "z" :-> Int, "w" :-> Int]
+foobarToFoo = subset foobar
