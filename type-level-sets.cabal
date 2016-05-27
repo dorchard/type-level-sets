@@ -1,12 +1,12 @@
 name:                   type-level-sets
-version:                0.6.1
+version:                0.7
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
    finite maps via 'Map', with value-level counterparts.
    .
    Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
-   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.
+   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.	
    .
    Here is a brief example for finite maps.: 
    .
@@ -64,7 +64,7 @@ maintainer:             Dominic Orchard
 stability:              experimental
 build-type:             Simple
 cabal-version:          >= 1.6
-tested-with:            GHC == 7.8.2
+tested-with:            GHC == 7.10.3
 
 extra-source-files:     example.hs
 
@@ -80,5 +80,5 @@ library
   exposed-modules:      Data.Type.Set
                         Data.Type.Map
                         
-  build-depends:        base >= 4.7.0.0 && < 5,
+  build-depends:        base < 5,
                         ghc-prim

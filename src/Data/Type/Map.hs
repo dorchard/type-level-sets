@@ -2,18 +2,21 @@
 The implementation is similar to that shown in the paper.
  "Embedding effect systems in Haskell" Orchard, Petricek 2014  -}
 
-{-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures, 
-             TypeFamilies, UndecidableInstances, MultiParamTypeClasses, 
-             FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables, ConstraintKinds #-}
+{-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures,
+             TypeFamilies, UndecidableInstances, MultiParamTypeClasses,
+             FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
+             ConstraintKinds #-}
 
-module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..), 
-                      Combine, Combinable(..), Cmp, 
-                      Lookup, Member, (:\)) where
+module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
+                      Combine, Combinable(..), Cmp,
+                      Nubable, nub,
+                      Lookup, Member, (:\), Split, split, IsMap,
+                      Submap, submap) where
 
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
-import Data.Type.Set hiding (Set(..), Nub,Union,Nubable,Sortable,Unionable,append,union,quicksort,nub)
+import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, (:++))
 
 {- Throughout, type variables
    'k' ranges over "keys"
@@ -22,7 +25,7 @@ import Data.Type.Set hiding (Set(..), Nub,Union,Nubable,Sortable,Unionable,appen
    'm', 'n' range over "maps" -}
 
 -- Mappings
-infixr 4 :-> 
+infixr 4 :->
 {-| A key-value pair -}
 data Mapping k v = k :-> v
 
@@ -61,7 +64,7 @@ type family Member (c :: k) (m :: [Mapping k v]) :: Bool where
 -- Value-level map with a type-level representation
 
 {-| Pair a symbol (representing a variable) with a type -}
-data Var (k :: Symbol) = Var 
+data Var (k :: Symbol) = Var
 
 instance KnownSymbol k => Show (Var k) where
     show = symbolVal
@@ -71,11 +74,21 @@ data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
 
+{-| Predicate to check if in normalised map form -}
+type IsMap s = (s ~ Nub (Sort s))
+
+{-| At the type level, normalise the list form to the map form -}
+type AsMap s = Nub (Sort s)
+
+{-| At the value level, noramlise the list form to the map form -}
+asMap :: (Sortable s, Nubable (Sort s)) => Map s -> Map (AsMap s)
+asMap x = nub (quicksort x)
+
 instance Show (Map '[]) where
     show Empty = "{}"
 
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show (Map ((k :-> v) ': s)) where
-    show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ (show' s) ++ "}" 
+    show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ (show' s) ++ "}"
 
 class Show' t where
     show' :: t -> String
@@ -95,7 +108,7 @@ append Empty x = x
 append (Ext k v xs) ys = Ext k v (append xs ys)
 
 type instance Cmp (k :: Symbol) (k' :: Symbol) = CmpSymbol k k'
-type instance Cmp (k :-> v) (k' :-> v) = CmpSymbol k k'
+type instance Cmp (k :-> v) (k' :-> v') = CmpSymbol k k'
 
 {-| Value-level quick sort that respects the type-level ordering -}
 class Sortable xs where
@@ -119,11 +132,11 @@ instance FilterV f k v '[] where
 
 instance (Conder ((Cmp x (k :-> v)) == LT), FilterV FMin k v xs) => FilterV FMin k v (x ': xs) where
     filterV f@Proxy k v (Ext k' v' xs) = cond (Proxy::(Proxy ((Cmp x (k :-> v)) == LT)))
-                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs) 
+                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs)
 
 instance (Conder (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ)), FilterV FMax k v xs) => FilterV FMax k v (x ': xs) where
     filterV f@Proxy k v (Ext k' v' xs) = cond (Proxy::(Proxy (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ))))
-                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs)  
+                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs)
 
 class Combinable t t' where
     combine :: t -> t' -> Combine t t'
@@ -142,9 +155,10 @@ instance {-# OVERLAPPING #-}
     nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
 
 instance {-# OVERLAPPING #-}
-     (Nub (e ': f ': s) ~ (e ': Nub (f ': s)), 
+     (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext k v (Ext k' v' s)) = Ext k v (nub (Ext k' v' s))
+
 
 class Conder g where
     cond :: Proxy g -> Map s -> Map t -> Map (If g s t)
@@ -155,3 +169,36 @@ instance Conder True where
 instance Conder False where
     cond _ s t = t
 
+
+{-| Splitting a union of maps, given the maps we want to split it into -}
+class Split s t st where
+   -- where st ~ Union s t
+   split :: Map st -> (Map s, Map t)
+
+instance Split '[] '[] '[] where
+   split Empty = (Empty, Empty)
+
+instance {-# OVERLAPPABLE #-} Split s t st => Split (x ': s) (x ': t) (x ': st) where
+   split (Ext k v st) = let (s, t) = split st
+                        in (Ext k v s, Ext k v t)
+
+instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
+   split (Ext k v st) = let (s, t) = split st
+                        in  (Ext k v s, t)
+
+instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
+   split (Ext k v st) = let (s, t) = split st
+                        in  (s, Ext k v t)
+
+{-| Construct a submap 's' from a supermap 't' -}
+class Submap s t where
+   submap :: Map t -> Map s
+
+instance Submap '[] '[] where
+   submap xs = Empty
+
+instance {-# OVERLAPPABLE #-} Submap s t => Submap s (x ': t) where
+   submap (Ext _ _ xs) = submap xs
+
+instance {-# OVERLAPS #-} Submap s t => Submap  (x ': s) (x ': t) where
+   submap (Ext k v xs) = Ext k v (submap xs)
