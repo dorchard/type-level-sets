@@ -1,10 +1,12 @@
-{-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies, 
-             MultiParamTypeClasses, FlexibleInstances, PolyKinds, FlexibleContexts,
-             UndecidableInstances, ConstraintKinds, ScopedTypeVariables #-}
+{-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies,
+             MultiParamTypeClasses, FlexibleInstances, PolyKinds,
+             FlexibleContexts, UndecidableInstances, ConstraintKinds,
+             ScopedTypeVariables #-}
 
-module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append, 
-                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..), 
-                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..), Delete(..), Proxy(..)) where
+module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
+                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
+                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
+                      Delete(..), Proxy(..)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -12,10 +14,10 @@ import Data.Type.Equality
 
 data Proxy (p :: k) = Proxy
 
--- Value-level 'Set' representation,  essentially a list 
+-- Value-level 'Set' representation,  essentially a list
 data Set (n :: [*]) where
     {--| Construct an empty set -}
-    Empty :: Set '[]   
+    Empty :: Set '[]
     {--| Extend a set with an element -}
     Ext :: e -> Set s -> Set (e ': s)
 
@@ -23,7 +25,7 @@ instance Show (Set '[]) where
     show Empty = "{}"
 
 instance (Show e, Show' (Set s)) => Show (Set (e ': s)) where
-    show (Ext e s) = "{" ++ show e ++ (show' s) ++ "}" 
+    show (Ext e s) = "{" ++ show e ++ (show' s) ++ "}"
 
 class Show' t where
     show' :: t -> String
@@ -43,8 +45,8 @@ asSet x = nub (quicksort x)
 type IsSet s = (s ~ Nub (Sort s))
 
 {-| Useful properties to be able to refer to someties -}
-type SetProperties f = (Union f '[] ~ f, Split f '[] f, 
-                        Union '[] f ~ f, Split '[] f f, 
+type SetProperties f = (Union f '[] ~ f, Split f '[] f,
+                        Union '[] f ~ f, Split '[] f f,
                         Union f f ~ f, Split f f f,
                         Unionable f '[], Unionable '[] f)
 
@@ -70,22 +72,22 @@ append (Ext e xs) ys = Ext e (append xs ys)
 {-| Splitting a union a set, given the sets we want to split it into -}
 class Split s t st where
    -- where st ~ Union s t
-   split :: Set st -> (Set s, Set t) 
+   split :: Set st -> (Set s, Set t)
 
 instance Split '[] '[] '[] where
    split Empty = (Empty, Empty)
 
-instance Split s t st => Split (x ': s) (x ': t) (x ': st) where
+instance {-# OVERLAPPABLE #-} Split s t st => Split (x ': s) (x ': t) (x ': st) where
    split (Ext x st) = let (s, t) = split st
                       in (Ext x s, Ext x t)
 
-instance Split s t st => Split (x ': s) t (x ': st) where
+instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
    split (Ext x st) = let (s, t) = split st
-                      in  (Ext x s, t) 
+                      in  (Ext x s, t)
 
-instance (Split s t st) => Split s (x ': t) (x ': st) where
+instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
    split (Ext x st) = let (s, t) = split st
-                      in  (s, Ext x t) 
+                      in  (s, Ext x t)
 
 
 
@@ -97,7 +99,7 @@ type family Nub t where
     Nub (e ': f ': s) = e ': Nub (f ': s)
 
 {-| Value-level counterpart to the type-level 'Nub'
-    Note: the value-level case for equal types is not define here, 
+    Note: the value-level case for equal types is not define here,
           but should be given per-application, e.g., custom 'merging' behaviour may be required -}
 
 class Nubable t where
@@ -112,7 +114,7 @@ instance Nubable '[e] where
 instance Nubable (e ': s) => Nubable (e ': e ': s) where
     nub (Ext _ (Ext e s)) = nub (Ext e s)
 
-instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)), 
+instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext e (Ext f s)) = Ext e (nub (Ext f s))
 
@@ -121,7 +123,7 @@ instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
 class Subset s t where
    subset :: Set t -> Set s
 
-instance Subset '[] '[] where 
+instance Subset '[] '[] where
    subset xs = Empty
 
 instance Subset s t => Subset s (x ': t) where
@@ -140,8 +142,8 @@ data Flag = FMin | FMax
 
 type family Filter (f :: Flag) (p :: k) (xs :: [k]) :: [k] where
             Filter f p '[]       = '[]
-            Filter FMin p (x ': xs) = If (Cmp x p == LT) (x ': (Filter FMin p xs)) (Filter FMin p xs) 
-            Filter FMax p (x ': xs) = If (Cmp x p == GT || Cmp x p == EQ) (x ': (Filter FMax p xs)) (Filter FMax p xs) 
+            Filter FMin p (x ': xs) = If (Cmp x p == LT) (x ': (Filter FMin p xs)) (Filter FMin p xs)
+            Filter FMax p (x ': xs) = If (Cmp x p == GT || Cmp x p == EQ) (x ': (Filter FMax p xs)) (Filter FMax p xs)
 
 type family DeleteFromList (e :: elem) (list :: [elem]) where
     DeleteFromList elem '[] = '[]
@@ -174,11 +176,11 @@ instance FilterV f p '[] where
 
 instance (Conder ((Cmp x p) == LT), FilterV FMin p xs) => FilterV FMin p (x ': xs) where
     filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy ((Cmp x p) == LT)))
-                                        (Ext x (filterV f p xs)) (filterV f p xs) 
+                                        (Ext x (filterV f p xs)) (filterV f p xs)
 
 instance (Conder (((Cmp x p) == GT) || ((Cmp x p) == EQ)), FilterV FMax p xs) => FilterV FMax p (x ': xs) where
     filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy (((Cmp x p) == GT) || ((Cmp x p) == EQ))))
-                                        (Ext x (filterV f p xs)) (filterV f p xs)  
+                                        (Ext x (filterV f p xs)) (filterV f p xs)
 
 class Conder g where
     cond :: Proxy g -> Set s -> Set t -> Set (If g s t)
@@ -192,4 +194,3 @@ instance Conder False where
 {-| Open-family for the ordering operation in the sort -}
 
 type family Cmp (a :: k) (b :: k) :: Ordering
-
