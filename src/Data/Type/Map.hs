@@ -10,7 +10,8 @@ The implementation is similar to that shown in the paper.
 module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
                       Combine, Combinable(..), Cmp,
                       Nubable, nub,
-                      Lookup, Member, (:\), Split, split, IsMap,
+                      Lookup, Member, (:\), Split, split,
+                      IsMap, AsMap, asMap, 
                       Submap, submap) where
 
 import GHC.TypeLits
@@ -150,14 +151,14 @@ instance Nubable '[] where
 instance Nubable '[e] where
     nub (Ext k v Empty) = Ext k v Empty
 
-instance {-# OVERLAPPING #-}
-    (Combinable v v', Nubable ((k :-> Combine v v') ': s)) => Nubable ((k :-> v) ': (k :-> v') ': s) where
-    nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
-
-instance {-# OVERLAPPING #-}
+instance {-# OVERLAPABLE #-}
      (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext k v (Ext k' v' s)) = Ext k v (nub (Ext k' v' s))
+
+instance {-# OVERLAPS #-}
+    (Combinable v v', Nubable ((k :-> Combine v v') ': s)) => Nubable ((k :-> v) ': (k :-> v') ': s) where
+    nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
 
 
 class Conder g where
