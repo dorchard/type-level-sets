@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, TypeOperators, KindSignatures, TypeFamilies, MultiParamTypeClasses #-}
+{-# LANGUAGE DataKinds, TypeOperators, TypeFamilies, MultiParamTypeClasses #-}
 
 import GHC.TypeLits
 import Data.Type.Map
@@ -10,10 +10,10 @@ instance Combinable Int Int where
     combine x y = x + y
 
 foo :: Map '["x" :-> Int, "z" :-> Bool, "w" :-> Int]
-foo = Ext (Var :: (Var "x")) 2 $
-       Ext (Var :: (Var "z")) True $
-        Ext (Var :: (Var "w")) 5 $
-         Empty
+foo = Ext (Var :: (Var "x")) 2
+    $ Ext (Var :: (Var "z")) True
+    $ Ext (Var :: (Var "w")) 5
+    $ Empty
 
 foo' :: Map (AsMap '["z" :-> Bool, "x" :-> Int, "w" :-> Int])
 foo' = asMap foo
