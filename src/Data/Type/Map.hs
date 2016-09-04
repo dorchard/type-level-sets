@@ -98,6 +98,12 @@ instance Show' (Map '[]) where
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k :-> v) ': s)) where
     show' (Ext k v s) = ", " ++ show k ++ " :-> " ++ show v ++ (show' s)
 
+instance Eq (Map '[]) where
+    Empty == Empty = True
+
+instance (KnownSymbol k, Eq (Var k), Eq v, Eq (Map s)) => Eq (Map ((k :-> v) ': s)) where
+    (Ext k v m) == (Ext k' v' m') = k == k' && v == v' && m == m'
+
 {-| Union of two finite maps -}
 union :: (Unionable s t) => Map s -> Map t -> Map (Union s t)
 union s t = nub (quicksort (append s t))
@@ -151,7 +157,7 @@ instance Nubable '[] where
 instance Nubable '[e] where
     nub (Ext k v Empty) = Ext k v Empty
 
-instance {-# OVERLAPABLE #-}
+instance {-# OVERLAPPABLE #-}
      (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext k v (Ext k' v' s)) = Ext k v (nub (Ext k' v' s))

@@ -1,5 +1,5 @@
 name:                   type-level-sets
-version:                0.7
+version:                0.8.0.0
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
@@ -8,32 +8,37 @@ description:
    Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
    and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.	
    .
-   Here is a brief example for finite maps.: 
+   Here is a brief example for finite maps: 
    .
    >
    > import Data.Type.Map
    >
-   > foo :: Map '["x" :-> Int, "z" :-> Int, "w" :-> Int]
-   > foo = Ext ((Var :: (Var "x")) :-> 2) $
-   >         Ext ((Var :: (Var "z")) :-> 4) $
-   >           Ext ((Var :: (Var "w")) :-> 5) $
-   >             Empty 
+   > -- Specify how to combine duplicate key-value pairs for Int values
+   > type instance Combine Int Int = Int
+   > instance Combinable Int Int where
+   >     combine x y = x + y
+   >
+   > foo :: Map '["x" :-> Int, "z" :-> Bool, "w" :-> Int]
+   > foo = Ext (Var :: (Var "x")) 2 
+   >     $ Ext (Var :: (Var "z")) True 
+   >     $ Ext (Var :: (Var "w")) 5 
+   >     $ Empty 
    >
    > bar :: Map '["y" :-> Int, "w" :-> Int]
-   > bar = Ext ((Var :: (Var "y")) :-> 3) $
-   >         Ext ((Var :: (Var "w")) :-> 1) $
-   >           Empty
+   > bar = Ext (Var :: (Var "y")) 3
+   >     $ Ext (Var :: (Var "w")) 1
+   >     $ Empty
    >  
-   > -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Int]
+   > -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Bool]
    > foobar = foo `union` bar
    .
-   The 'Set' type for 'foobar' here shows the normalised form (sorted with no duplicates).
+   The 'Map' type for 'foobar' here shows the normalised form (sorted with no duplicates).
    The type signatures is commented out as it can be infered. Running the example we get:
    .
    > >>> foobar	
-   > [(Var :-> 1), (Var :-> 2), (Var :-> 3), (Var :-> 4)]
+   > {w :-> 6, x :-> 2, y :-> 3, z :-> True}
    .
-   Thus, we see that the first value paired with the \"w\" variable is dropped.
+   Thus, we see that the values for \"w\" are added together. 
    For sets, here is an example:
    .
    > import GHC.TypeLits
@@ -64,9 +69,9 @@ maintainer:             Dominic Orchard
 stability:              experimental
 build-type:             Simple
 cabal-version:          >= 1.6
-tested-with:            GHC == 7.10.3
+tested-with:            GHC >= 8.0.1
 
-extra-source-files:     example.hs
+extra-source-files:     example.hs, example2.hs
 
 
 source-repository head

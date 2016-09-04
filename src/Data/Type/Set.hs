@@ -34,6 +34,10 @@ instance Show' (Set '[]) where
 instance (Show' (Set s), Show e) => Show' (Set (e ': s)) where
     show' (Ext e s) = ", " ++ show e ++ (show' s)
 
+instance (Eq e, Eq (Set s)) => Eq (Set (e ': s)) where
+    (Ext e m) == (Ext e' m') = e == e' && m == m'
+
+
 {-| At the type level, normalise the list form to the set form -}
 type AsSet s = Nub (Sort s)
 
