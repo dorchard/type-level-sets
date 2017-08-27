@@ -5,22 +5,26 @@ The implementation is similar to that shown in the paper.
 {-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures,
              TypeFamilies, UndecidableInstances, MultiParamTypeClasses,
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
-             ConstraintKinds #-}
+             ConstraintKinds, RankNTypes #-}
 
-module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
-                      Combine, Combinable(..), Cmp,
-                      Nubable, nub,
-                      Lookup, Member, (:\), Split, split,
-                      IsMap, AsMap, asMap,
-                      Submap, submap) where
+module Data.Type.Functor.Map
+  (Mapping(..), Union, Unionable, union, Var(..), Map(..), fromSimple, toSimple,
+   traverseValues, mapValues, Combine, Combinable(..), Cmp, Nubable, nub,
+   Lookup, Member, (:\), Split, split, IsMap, AsMap, asMap, Submap, submap)
+   where
 
 import GHC.TypeLits
+import Data.Functor.Identity (Identity(..))
+
 import Data.Type.Bool
 import Data.Type.Equality
 import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, (:++))
-import Data.Type.Map.Internal (IsMap, AsMap, Var(..), Map(..), Mapping(..),
-                               Combine, Nub, Show'(..), Union, (:\), Lookup,
-                               Member)
+
+import Data.Type.Map.Internal (IsMap, AsMap, Mapping(..), Combine, Nub,
+                               Show'(..), Var(..), Union, (:\), Lookup, Member)
+import qualified Data.Type.Map.Internal as Simple
+
+-- import qualified Data.Type.M
 
 {- Throughout, type variables
    'k' ranges over "keys"
@@ -28,43 +32,79 @@ import Data.Type.Map.Internal (IsMap, AsMap, Var(..), Map(..), Mapping(..),
    'kvp' ranges over "key-value-pairs"
    'm', 'n' range over "maps" -}
 
+-----------------------------------------------------------------
+-- Value-level map with a type-level representation
+
+{-|
+A value-level heterogenously-typed Map (with type-level representation in terms
+of lists).
+
+The map is parameterised by a functor @f@ from the universe @u@ to concrete
+types. For example, use 'Identity' for a normal heterogeneous map, or
+'Data.Functor.Const.Const a' for a homogeneous map with values of type @a@.
+-}
+data Map (f :: u -> *) (n :: [Mapping Symbol u]) where
+    Empty :: Map f '[]
+    Ext :: Var k -> f v -> Map f m -> Map f ((k :-> v) ': m)
+
 {-| At the value level, noramlise the list form to the map form -}
-asMap :: (Sortable s, Nubable (Sort s)) => Map s -> Map (AsMap s)
+asMap :: (Sortable s, Nubable f (Sort s)) => Map f s -> Map f (AsMap s)
 asMap x = nub (quicksort x)
 
-instance Show (Map '[]) where
+-- | Convert from a simple 'Simple.Map' to a 'Map' in 'Identity'.
+fromSimple :: Simple.Map m -> Map Identity m
+fromSimple Simple.Empty = Empty
+fromSimple (Simple.Ext k v s) = Ext k (Identity v) (fromSimple s)
+
+-- | Convert from a 'Map' in 'Identity' to a simple 'Simple.Map'.
+toSimple :: Map Identity m -> Simple.Map m
+toSimple Empty = Simple.Empty
+toSimple (Ext k (Identity v) s) = Simple.Ext k v (toSimple s)
+
+-- | Analogous to 'traverse', but the given function is a natural transformation
+-- from @f@ to @t . g@.
+traverseValues
+  :: (Applicative t)
+  => (forall a. f a -> t (g a)) -> Map f m -> t (Map g m)
+traverseValues f Empty = pure Empty
+traverseValues f (Ext k v s) =
+  Ext k <$> f v <*> traverseValues f s
+
+-- | Analogous to 'fmap', but the given function is a natural transformation
+-- from @f@ to @g@.
+mapValues :: (forall a. f a -> g a) -> Map f m -> Map g m
+mapValues f = runIdentity . traverseValues (Identity . f)
+
+instance Show (Map f '[]) where
     show Empty = "{}"
 
-instance (KnownSymbol k, Show v, Show' (Map s)) => Show (Map ((k :-> v) ': s)) where
+instance (KnownSymbol k, Show (f v), Show' (Map f s)) => Show (Map f ((k :-> v) ': s)) where
     show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ (show' s) ++ "}"
 
-instance Show' (Map '[]) where
+instance Show' (Map f '[]) where
     show' Empty = ""
-instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k :-> v) ': s)) where
+instance (KnownSymbol k, Show (f v), Show' (Map f s)) => Show' (Map f ((k :-> v) ': s)) where
     show' (Ext k v s) = ", " ++ show k ++ " :-> " ++ show v ++ (show' s)
 
-instance Eq (Map '[]) where
+instance Eq (Map f '[]) where
     Empty == Empty = True
 
-instance (KnownSymbol k, Eq (Var k), Eq v, Eq (Map s)) => Eq (Map ((k :-> v) ': s)) where
+instance (KnownSymbol k, Eq (Var k), Eq (f v), Eq (Map f s)) => Eq (Map f ((k :-> v) ': s)) where
     (Ext k v m) == (Ext k' v' m') = k == k' && v == v' && m == m'
 
 {-| Union of two finite maps -}
-union :: (Unionable s t) => Map s -> Map t -> Map (Union s t)
+union :: (Unionable f s t) => Map f s -> Map f t -> Map f (Union s t)
 union s t = nub (quicksort (append s t))
 
-type Unionable s t = (Nubable (Sort (s :++ t)), Sortable (s :++ t))
+type Unionable f s t = (Nubable f (Sort (s :++ t)), Sortable (s :++ t))
 
-append :: Map s -> Map t -> Map (s :++ t)
+append :: Map f s -> Map f t -> Map f (s :++ t)
 append Empty x = x
 append (Ext k v xs) ys = Ext k v (append xs ys)
 
-type instance Cmp (k :: Symbol) (k' :: Symbol) = CmpSymbol k k'
-type instance Cmp (k :-> v) (k' :-> v') = CmpSymbol k k'
-
 {-| Value-level quick sort that respects the type-level ordering -}
 class Sortable xs where
-    quicksort :: Map xs -> Map (Sort xs)
+    quicksort :: Map f xs -> Map f (Sort xs)
 
 instance Sortable '[] where
     quicksort Empty = Empty
@@ -77,7 +117,7 @@ instance (Sortable (Filter FMin (k :-> v) xs),
 
 {- Filter out the elements less-than or greater-than-or-equal to the pivot -}
 class FilterV (f::Flag) k v xs where
-    filterV :: Proxy f -> Var k -> v -> Map xs -> Map (Filter f (k :-> v) xs)
+    filterV :: Proxy f -> Var k -> g v -> Map g xs -> Map g (Filter f (k :-> v) xs)
 
 instance FilterV f k v '[] where
     filterV _ k v Empty      = Empty
@@ -90,30 +130,30 @@ instance (Conder (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ)), Filte
     filterV f@Proxy k v (Ext k' v' xs) = cond (Proxy::(Proxy (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ))))
                                         (Ext k' v' (filterV f k v xs)) (filterV f k v xs)
 
-class Combinable t t' where
-    combine :: t -> t' -> Combine t t'
+class Combinable f t t' where
+  combine :: f t -> f t' -> f (Combine t t')
 
-class Nubable t where
-    nub :: Map t -> Map (Nub t)
+class Nubable f t where
+    nub :: Map f t -> Map f (Nub t)
 
-instance Nubable '[] where
+instance Nubable f '[] where
     nub Empty = Empty
 
-instance Nubable '[e] where
+instance Nubable f '[e] where
     nub (Ext k v Empty) = Ext k v Empty
 
 instance {-# OVERLAPPABLE #-}
      (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
-              Nubable (f ': s)) => Nubable (e ': f ': s) where
+              Nubable g (f ': s)) => Nubable g (e ': f ': s) where
     nub (Ext k v (Ext k' v' s)) = Ext k v (nub (Ext k' v' s))
 
 instance {-# OVERLAPS #-}
-    (Combinable v v', Nubable ((k :-> Combine v v') ': s)) => Nubable ((k :-> v) ': (k :-> v') ': s) where
+    (Combinable f v v', Nubable f ((k :-> Combine v v') ': s)) => Nubable f ((k :-> v) ': (k :-> v') ': s) where
     nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
 
 
 class Conder g where
-    cond :: Proxy g -> Map s -> Map t -> Map (If g s t)
+    cond :: Proxy g -> Map f s -> Map f t -> Map f (If g s t)
 
 instance Conder True where
     cond _ s t = s
@@ -125,7 +165,7 @@ instance Conder False where
 {-| Splitting a union of maps, given the maps we want to split it into -}
 class Split s t st where
    -- where st ~ Union s t
-   split :: Map st -> (Map s, Map t)
+   split :: Map f st -> (Map f s, Map f t)
 
 instance Split '[] '[] '[] where
    split Empty = (Empty, Empty)
@@ -144,7 +184,7 @@ instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
 
 {-| Construct a submap 's' from a supermap 't' -}
 class Submap s t where
-   submap :: Map t -> Map s
+   submap :: Map f t -> Map f s
 
 instance Submap '[] '[] where
    submap xs = Empty
