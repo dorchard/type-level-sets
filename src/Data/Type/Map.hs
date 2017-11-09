@@ -46,17 +46,17 @@ type family Combine (a :: v) (b :: v) :: v
 
 {-| Delete elements from a map by key -}
 type family (m :: [Mapping k v]) :\ (c :: k) :: [Mapping k v] where
-     '[]               :\ k = '[]
-     ((k :-> v) ': m)  :\ k = m :\ k
-     (kvp ': m)        :\ k = kvp ': (m :\ k)
+     '[]              :\ k = '[]
+     ((k :-> v) ': m) :\ k = m :\ k
+     (kvp ': m)       :\ k = kvp ': (m :\ k)
 
-{-| Lookup elements from a map -}
+{-| Type-level lookup of elements from a map -}
 type family Lookup (m :: [Mapping k v]) (c :: k) :: Maybe v where
             Lookup '[]              k = Nothing
             Lookup ((k :-> v) ': m) k = Just v
             Lookup (kvp ': m)       k = Lookup m k
 
-{-| Membership test -}
+{-| Membership test as type function -}
 type family Member (c :: k) (m :: [Mapping k v]) :: Bool where
             Member k '[]              = False
             Member k ((k :-> v) ': m) = True
@@ -117,7 +117,7 @@ instance Show (Map '[]) where
     show Empty = "{}"
 
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show (Map ((k :-> v) ': s)) where
-    show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ (show' s) ++ "}"
+    show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ show' s ++ "}"
 
 class Show' t where
     show' :: t -> String
@@ -132,12 +132,13 @@ instance Eq (Map '[]) where
 instance (KnownSymbol k, Eq (Var k), Eq v, Eq (Map s)) => Eq (Map ((k :-> v) ': s)) where
     (Ext k v m) == (Ext k' v' m') = k == k' && v == v' && m == m'
 
-{-| Union of two finite maps -}
+{-| Union of two finite maps (normalising) -}
 union :: (Unionable s t) => Map s -> Map t -> Map (Union s t)
 union s t = nub (quicksort (append s t))
 
 type Unionable s t = (Nubable (Sort (s :++ t)), Sortable (s :++ t))
 
+{-| Append of two finite maps (non normalising) -}
 append :: Map s -> Map t -> Map (s :++ t)
 append Empty x = x
 append (Ext k v xs) ys = Ext k v (append xs ys)
@@ -152,11 +153,15 @@ class Sortable xs where
 instance Sortable '[] where
     quicksort Empty = Empty
 
-instance (Sortable (Filter FMin (k :-> v) xs),
-          Sortable (Filter FMax (k :-> v) xs), FilterV FMin k v xs, FilterV FMax k v xs) => Sortable ((k :-> v) ': xs) where
-    quicksort (Ext k v xs) = ((quicksort (less k v xs)) `append` (Ext k v Empty)) `append` (quicksort (more k v xs))
-                              where less = filterV (Proxy::(Proxy FMin))
-                                    more = filterV (Proxy::(Proxy FMax))
+instance (Sortable (Filter FMin (k :-> v) xs)
+         , Sortable (Filter FMax (k :-> v) xs)
+         , FilterV FMin k v xs
+         , FilterV FMax k v xs) => Sortable ((k :-> v) ': xs) where
+    quicksort (Ext k v xs) =
+        quicksort (less k v xs) `append` Ext k v Empty `append` quicksort (more k v xs)
+      where
+        less = filterV (Proxy::(Proxy FMin))
+        more = filterV (Proxy::(Proxy FMax))
 
 {- Filter out the elements less-than or greater-than-or-equal to the pivot -}
 class FilterV (f::Flag) k v xs where
@@ -165,13 +170,19 @@ class FilterV (f::Flag) k v xs where
 instance FilterV f k v '[] where
     filterV _ k v Empty      = Empty
 
-instance (Conder ((Cmp x (k :-> v)) == LT), FilterV FMin k v xs) => FilterV FMin k v (x ': xs) where
-    filterV f@Proxy k v (Ext k' v' xs) = cond (Proxy::(Proxy ((Cmp x (k :-> v)) == LT)))
-                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs)
+instance (Conder (Cmp x (k :-> v) == LT), FilterV FMin k v xs) => FilterV FMin k v (x ': xs) where
+    filterV f@Proxy k v (Ext k' v' xs) =
+      cond (Proxy::(Proxy (Cmp x (k :-> v) == LT)))
+          (Ext k' v' (filterV f k v xs))
+          (filterV f k v xs)
 
-instance (Conder (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ)), FilterV FMax k v xs) => FilterV FMax k v (x ': xs) where
-    filterV f@Proxy k v (Ext k' v' xs) = cond (Proxy::(Proxy (((Cmp x (k :-> v)) == GT) || ((Cmp x (k :-> v)) == EQ))))
-                                        (Ext k' v' (filterV f k v xs)) (filterV f k v xs)
+instance
+       (Conder ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ)), FilterV FMax k v xs)
+    => FilterV FMax k v (x ': xs) where
+    filterV f@Proxy k v (Ext k' v' xs) =
+      cond (Proxy::(Proxy ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ))))
+           (Ext k' v' (filterV f k v xs))
+           (filterV f k v xs)
 
 class Combinable t t' where
     combine :: t -> t' -> Combine t t'
@@ -191,7 +202,8 @@ instance {-# OVERLAPPABLE #-}
     nub (Ext k v (Ext k' v' s)) = Ext k v (nub (Ext k' v' s))
 
 instance {-# OVERLAPS #-}
-    (Combinable v v', Nubable ((k :-> Combine v v') ': s)) => Nubable ((k :-> v) ': (k :-> v') ': s) where
+       (Combinable v v', Nubable ((k :-> Combine v v') ': s))
+    => Nubable ((k :-> v) ': (k :-> v') ': s) where
     nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
 
 
