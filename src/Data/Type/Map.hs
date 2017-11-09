@@ -5,13 +5,14 @@ The implementation is similar to that shown in the paper.
 {-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures,
              TypeFamilies, UndecidableInstances, MultiParamTypeClasses,
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
-             ConstraintKinds #-}
+             ConstraintKinds, IncoherentInstances #-}
 
 module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
                       Combine, Combinable(..), Cmp,
                       Nubable, nub,
                       Lookup, Member, (:\), Split, split,
-                      IsMap, AsMap, asMap, 
+                      IsMember, lookp, Updatable, update,
+                      IsMap, AsMap, asMap,
                       Submap, submap) where
 
 import GHC.TypeLits
@@ -74,6 +75,33 @@ instance KnownSymbol k => Show (Var k) where
 data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
+
+{-| Membership test a type class (predicate) -}
+class IsMember v t m where
+  {-| Value-level lookup of elements from a map, via type class predicate -}
+  lookp :: Var v -> Map m -> t
+
+instance {-# OVERLAPS #-} IsMember v t ((v ':-> t) ': m) where
+  lookp _ (Ext _ x _) = x
+
+instance IsMember v t m => IsMember v t (x ': m) where
+  lookp v (Ext _ _ m) = lookp v m
+
+
+{-| Updatability as a type class -}
+class Updatable v t m n where
+  {-| Update a map with `m` at variable `v` with a value of type `t`
+      to produce a map of type `n` -}
+  update :: Map m -> Var v -> t -> Map n
+
+instance {-# OVERLAPS #-} Updatable v t ((v ':-> s) ': m) ((v ':-> t) ': m) where
+  update (Ext v _ m) _ x = Ext v x m
+
+instance Updatable v t m n => Updatable v t ((w ':-> y) ': m) ((w ':-> y) ': n) where
+  update (Ext w y m) v x = Ext w y (update m v x)
+
+instance Updatable v t '[] '[v ':-> t] where
+  update Empty v x = Ext v x Empty
 
 {-| Predicate to check if in normalised map form -}
 type IsMap s = (s ~ Nub (Sort s))
