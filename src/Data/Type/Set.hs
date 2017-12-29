@@ -6,7 +6,7 @@
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      Delete(..), Proxy(..)) where
+                      Delete(..), Proxy(..), remove, Remove, (:\)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -73,6 +73,25 @@ append :: Set s -> Set t -> Set (s :++ t)
 append Empty x = x
 append (Ext e xs) ys = Ext e (append xs ys)
 
+{-| Delete elements from a set -}
+type family (m :: [k]) :\ (x :: k) :: [k] where
+     '[]       :\ x = '[]
+     (x ': xs) :\ x = xs
+     (y ': xs) :\ x = y ': (xs :\ x)
+
+class Remove s t where
+  remove :: Set s -> Proxy t -> Set (s :\ t)
+
+instance Remove '[] t where
+  remove Empty Proxy = Empty
+
+instance {-# OVERLAPS #-} Remove (x ': xs) x where
+  remove (Ext _ xs) Proxy = xs
+
+instance {-# OVERLAPPABLE #-} (((y : xs) :\ x) ~ (y : (xs :\ x)), Remove xs x)
+      => Remove (y ': xs) x where
+  remove (Ext y xs) (x@Proxy) = Ext y (remove xs x)
+
 {-| Splitting a union a set, given the sets we want to split it into -}
 class Split s t st where
    -- where st ~ Union s t
@@ -92,8 +111,6 @@ instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
 instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
    split (Ext x st) = let (s, t) = split st
                       in  (s, Ext x t)
-
-
 
 {-| Remove duplicates from a sorted list -}
 type family Nub t where
