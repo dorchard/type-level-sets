@@ -6,7 +6,8 @@
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      Delete(..), Proxy(..), remove, Remove, (:\)) where
+                      Delete(..), Proxy(..), remove, Remove, (:\),
+                      Member) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -15,7 +16,7 @@ import Data.Type.Equality
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
-data Set (n :: [*]) where
+data Set (n :: [k]) :: * where
     {--| Construct an empty set -}
     Empty :: Set '[]
     {--| Extend a set with an element -}
@@ -215,3 +216,14 @@ instance Conder False where
 {-| Open-family for the ordering operation in the sort -}
 
 type family Cmp (a :: k) (b :: k) :: Ordering
+
+{-| Membership of an element in a set, with an acommanying
+    value-level function that returns a bool -}
+class Member a s where
+  member :: Proxy a -> Set s -> Bool
+
+instance {-# OVERLAPS #-} Member a (a ': s) where
+  member _ (Ext x _) = True
+
+instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
+  member a (Ext _ xs) = member a xs

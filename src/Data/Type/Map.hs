@@ -84,7 +84,7 @@ class IsMember v t m where
 instance {-# OVERLAPS #-} IsMember v t ((v ':-> t) ': m) where
   lookp _ (Ext _ x _) = x
 
-instance IsMember v t m => IsMember v t (x ': m) where
+instance {-# OVERLAPPABLE #-} IsMember v t m => IsMember v t (x ': m) where
   lookp v (Ext _ _ m) = lookp v m
 
 
