@@ -6,7 +6,8 @@
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      Delete(..), Proxy(..)) where
+                      Delete(..), Proxy(..), remove, Remove, (:\),
+                      Member) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -15,7 +16,7 @@ import Data.Type.Equality
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
-data Set (n :: [*]) where
+data Set (n :: [k]) :: * where
     {--| Construct an empty set -}
     Empty :: Set '[]
     {--| Extend a set with an element -}
@@ -73,6 +74,25 @@ append :: Set s -> Set t -> Set (s :++ t)
 append Empty x = x
 append (Ext e xs) ys = Ext e (append xs ys)
 
+{-| Delete elements from a set -}
+type family (m :: [k]) :\ (x :: k) :: [k] where
+     '[]       :\ x = '[]
+     (x ': xs) :\ x = xs
+     (y ': xs) :\ x = y ': (xs :\ x)
+
+class Remove s t where
+  remove :: Set s -> Proxy t -> Set (s :\ t)
+
+instance Remove '[] t where
+  remove Empty Proxy = Empty
+
+instance {-# OVERLAPS #-} Remove (x ': xs) x where
+  remove (Ext _ xs) Proxy = xs
+
+instance {-# OVERLAPPABLE #-} (((y : xs) :\ x) ~ (y : (xs :\ x)), Remove xs x)
+      => Remove (y ': xs) x where
+  remove (Ext y xs) (x@Proxy) = Ext y (remove xs x)
+
 {-| Splitting a union a set, given the sets we want to split it into -}
 class Split s t st where
    -- where st ~ Union s t
@@ -92,8 +112,6 @@ instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
 instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
    split (Ext x st) = let (s, t) = split st
                       in  (s, Ext x t)
-
-
 
 {-| Remove duplicates from a sorted list -}
 type family Nub t where
@@ -130,10 +148,10 @@ class Subset s t where
 instance Subset '[] '[] where
    subset xs = Empty
 
-instance Subset s t => Subset s (x ': t) where
+instance {-# OVERLAPPABLE #-} Subset s t => Subset s (x ': t) where
    subset (Ext _ xs) = subset xs
 
-instance Subset s t => Subset (x ': s) (x ': t) where
+instance {-# OVERLAPS #-} Subset s t => Subset (x ': s) (x ': t) where
    subset (Ext x xs) = Ext x (subset xs)
 
 
@@ -198,3 +216,14 @@ instance Conder False where
 {-| Open-family for the ordering operation in the sort -}
 
 type family Cmp (a :: k) (b :: k) :: Ordering
+
+{-| Membership of an element in a set, with an acommanying
+    value-level function that returns a bool -}
+class Member a s where
+  member :: Proxy a -> Set s -> Bool
+
+instance {-# OVERLAPS #-} Member a (a ': s) where
+  member _ (Ext x _) = True
+
+instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
+  member a (Ext _ xs) = member a xs
