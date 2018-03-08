@@ -19,6 +19,9 @@ import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
 import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, (:++))
+import Data.Type.Map.Internal (IsMap, AsMap, Var(..), Map(..), Mapping(..),
+                               Combine, Nub, Show'(..), Union, (:\), Lookup,
+                               Member)
 
 {- Throughout, type variables
    'k' ranges over "keys"
@@ -123,8 +126,6 @@ instance Show (Map '[]) where
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show (Map ((k :-> v) ': s)) where
     show (Ext k v s) = "{" ++ show k ++ " :-> " ++ show v ++ show' s ++ "}"
 
-class Show' t where
-    show' :: t -> String
 instance Show' (Map '[]) where
     show' Empty = ""
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k :-> v) ': s)) where
