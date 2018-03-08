@@ -100,8 +100,12 @@ instance {-# OVERLAPS #-} Updatable v t ((v ':-> s) ': m) ((v ':-> t) ': m) wher
 instance Updatable v t m n => Updatable v t ((w ':-> y) ': m) ((w ':-> y) ': n) where
   update (Ext w y m) v x = Ext w y (update m v x)
 
-instance Updatable v t '[] '[v ':-> t] where
-  update Empty v x = Ext v x Empty
+-- instance Updatable v t '[] '[v ':-> t] where
+--   update Empty v x = Ext v x Empty
+
+instance Updatable v t s ((v ':-> t) ': s) where
+  update xs v x = Ext v x xs
+
 
 {-| Predicate to check if in normalised map form -}
 type IsMap s = (s ~ Nub (Sort s))
