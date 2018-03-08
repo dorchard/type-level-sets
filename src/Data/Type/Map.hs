@@ -100,8 +100,12 @@ instance {-# OVERLAPS #-} Updatable v t ((v ':-> s) ': m) ((v ':-> t) ': m) wher
 instance Updatable v t m n => Updatable v t ((w ':-> y) ': m) ((w ':-> y) ': n) where
   update (Ext w y m) v x = Ext w y (update m v x)
 
-instance Updatable v t '[] '[v ':-> t] where
-  update Empty v x = Ext v x Empty
+-- instance Updatable v t '[] '[v ':-> t] where
+--   update Empty v x = Ext v x Empty
+
+instance Updatable v t s ((v ':-> t) ': s) where
+  update xs v x = Ext v x xs
+
 
 {-| Predicate to check if in normalised map form -}
 type IsMap s = (s ~ Nub (Sort s))
@@ -129,8 +133,14 @@ instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k :-> v) ': s)) 
 instance Eq (Map '[]) where
     Empty == Empty = True
 
-instance (KnownSymbol k, Eq (Var k), Eq v, Eq (Map s)) => Eq (Map ((k :-> v) ': s)) where
-    (Ext k v m) == (Ext k' v' m') = k == k' && v == v' && m == m'
+instance (Eq v, Eq (Map s)) => Eq (Map ((k :-> v) ': s)) where
+    (Ext Var v m) == (Ext Var v' m') = v == v' && m == m'
+
+instance Ord (Map '[]) where
+    compare Empty Empty = EQ
+
+instance (Ord v, Ord (Map s)) => Ord (Map ((k :-> v) ': s)) where
+    compare (Ext Var v m) (Ext Var v' m') = compare v v' `mappend` compare m m'
 
 {-| Union of two finite maps (normalising) -}
 union :: (Unionable s t) => Map s -> Map t -> Map (Union s t)
