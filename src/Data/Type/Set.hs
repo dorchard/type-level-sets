@@ -7,7 +7,7 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
-                      Member) where
+                      Member(..), NonMember, MemberP(..)) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -227,3 +227,10 @@ instance {-# OVERLAPS #-} Member a (a ': s) where
 
 instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
   member a (Ext _ xs) = member a xs
+
+type family MemberP a s :: Bool where
+            MemberP a '[]      = False
+            MemberP a (a ': s) = True
+            MemberP a (b ': s) = MemberP a s
+
+type NonMember a s = MemberP a s ~ False

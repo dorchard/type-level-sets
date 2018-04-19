@@ -1,5 +1,5 @@
 name:                   type-level-sets
-version:                0.8.7.0
+version:                0.8.8.0
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:            
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
@@ -69,7 +69,7 @@ maintainer:             Dominic Orchard
 stability:              experimental
 build-type:             Simple
 cabal-version:          >= 1.6
-tested-with:            GHC >= 8.0.1
+tested-with:            GHC >= 8.2.2
 
 extra-source-files:     example.hs, example2.hs
 
