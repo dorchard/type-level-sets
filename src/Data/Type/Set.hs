@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies,
              MultiParamTypeClasses, FlexibleInstances, PolyKinds,
              FlexibleContexts, UndecidableInstances, ConstraintKinds,
-             ScopedTypeVariables #-}
+             ScopedTypeVariables, TypeInType #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
@@ -16,7 +16,7 @@ import Data.Type.Equality
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
-data Set (n :: [k]) :: * where
+data Set (n :: [k]) where
     {--| Construct an empty set -}
     Empty :: Set '[]
     {--| Extend a set with an element -}
