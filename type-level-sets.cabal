@@ -71,7 +71,7 @@ build-type:             Simple
 cabal-version:          >= 1.6
 tested-with:            GHC >= 8.2.2
 
-extra-source-files:     example.hs, example2.hs
+extra-source-files:     example.hs, example2.hs, changelog.md
 
 
 source-repository head
