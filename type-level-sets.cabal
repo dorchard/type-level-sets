@@ -1,14 +1,14 @@
 name:                   type-level-sets
 version:                0.8.9.0
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
-description:            
+description:
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
    finite maps via 'Map', with value-level counterparts.
    .
-   Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard 
-   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.	
+   Described in the paper \"Embedding effect systems in Haskell\" by Dominic Orchard
+   and Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf> (Haskell Symposium, 2014). This version now uses Quicksort to normalise the representation.
    .
-   Here is a brief example for finite maps: 
+   Here is a brief example for finite maps:
    .
    >
    > import Data.Type.Map
@@ -19,26 +19,26 @@ description:
    >     combine x y = x + y
    >
    > foo :: Map '["x" :-> Int, "z" :-> Bool, "w" :-> Int]
-   > foo = Ext (Var :: (Var "x")) 2 
-   >     $ Ext (Var :: (Var "z")) True 
-   >     $ Ext (Var :: (Var "w")) 5 
-   >     $ Empty 
+   > foo = Ext (Var :: (Var "x")) 2
+   >     $ Ext (Var :: (Var "z")) True
+   >     $ Ext (Var :: (Var "w")) 5
+   >     $ Empty
    >
    > bar :: Map '["y" :-> Int, "w" :-> Int]
    > bar = Ext (Var :: (Var "y")) 3
    >     $ Ext (Var :: (Var "w")) 1
    >     $ Empty
-   >  
+   >
    > -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Bool]
    > foobar = foo `union` bar
    .
    The 'Map' type for 'foobar' here shows the normalised form (sorted with no duplicates).
    The type signatures is commented out as it can be infered. Running the example we get:
    .
-   > >>> foobar	
+   > >>> foobar
    > {w :-> 6, x :-> 2, y :-> 3, z :-> True}
    .
-   Thus, we see that the values for \"w\" are added together. 
+   Thus, we see that the values for \"w\" are added together.
    For sets, here is an example:
    .
    > import GHC.TypeLits
@@ -48,7 +48,7 @@ description:
    > data Natural (a :: Nat) where
    >   Z :: Natural 0
    >   S :: Natural n -> Natural (n + 1)
-   > 
+   >
    > -- foo :: Set '[Natural 0, Natural 1, Natural 3]
    > foo = asSet $ Ext (S Z) (Ext (S (S (S Z))) (Ext Z Empty))
    >
@@ -63,7 +63,7 @@ description:
 license:                BSD3
 license-file:           LICENSE
 category:               Type System, Data Structures
-copyright:              2013-16 University of Cambridge
+copyright:              2013-18 University of Kent
 author:                 Dominic Orchard
 maintainer:             Dominic Orchard
 stability:              experimental
@@ -84,6 +84,6 @@ library
 
   exposed-modules:      Data.Type.Set
                         Data.Type.Map
-                        
+
   build-depends:        base < 5,
                         ghc-prim
