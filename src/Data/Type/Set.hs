@@ -77,7 +77,7 @@ append (Ext e xs) ys = Ext e (append xs ys)
 {-| Delete elements from a set -}
 type family (m :: [k]) :\ (x :: k) :: [k] where
      '[]       :\ x = '[]
-     (x ': xs) :\ x = xs
+     (x ': xs) :\ x = xs :\ x
      (y ': xs) :\ x = y ': (xs :\ x)
 
 class Remove s t where
@@ -86,8 +86,8 @@ class Remove s t where
 instance Remove '[] t where
   remove Empty Proxy = Empty
 
-instance {-# OVERLAPS #-} Remove (x ': xs) x where
-  remove (Ext _ xs) Proxy = xs
+instance {-# OVERLAPS #-} Remove xs x => Remove (x ': xs) x where
+  remove (Ext _ xs) x@Proxy = remove xs x
 
 instance {-# OVERLAPPABLE #-} (((y : xs) :\ x) ~ (y : (xs :\ x)), Remove xs x)
       => Remove (y ': xs) x where
