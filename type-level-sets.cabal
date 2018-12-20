@@ -80,6 +80,7 @@ source-repository head
 
 library
   hs-source-dirs:       src
+  other-extensions:     TypeInType
 
 
   exposed-modules:      Data.Type.Set
