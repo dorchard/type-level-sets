@@ -217,16 +217,23 @@ instance Conder False where
 
 type family Cmp (a :: k) (b :: k) :: Ordering
 
-{-| Membership of an element in a set, with an acommanying
-    value-level function that returns a bool -}
+{-| Membership of an element in a set, with an accompanying
+    value-level functions, one which returns a bool, and
+    one which returns the corresponding element -}
 class Member a s where
   member :: Proxy a -> Set s -> Bool
+
+  lookp :: Proxy a -> Set s -> a
 
 instance {-# OVERLAPS #-} Member a (a ': s) where
   member _ (Ext x _) = True
 
+  lookp _ (Ext x _) = x
+
 instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
   member a (Ext _ xs) = member a xs
+
+  lookp a (Ext _ xs) = lookp a xs
 
 type family MemberP a s :: Bool where
             MemberP a '[]      = False
