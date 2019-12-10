@@ -158,14 +158,15 @@ instance {-# OVERLAPS #-} Subset s t => Subset (x ': s) (x ': t) where
 {-| Type-level quick sort for normalising the representation of sets -}
 type family Sort (xs :: [k]) :: [k] where
             Sort '[]       = '[]
-            Sort (x ': xs) = ((Sort (Filter FMin x xs)) :++ '[x]) :++ (Sort (Filter FMax x xs))
+            Sort (x ': xs) = ((Sort (Filter FMin x xs)) :++ (x ': (Filter FEq x xs))) :++ (Sort (Filter FMax x xs))
 
-data Flag = FMin | FMax
+data Flag = FEq | FMin | FMax
 
 type family Filter (f :: Flag) (p :: k) (xs :: [k]) :: [k] where
             Filter f p '[]       = '[]
+            Filter FEq p (x ': xs) = If (Cmp x p == EQ) (x ': (Filter FEq p xs)) (Filter FEq p xs)
             Filter FMin p (x ': xs) = If (Cmp x p == LT) (x ': (Filter FMin p xs)) (Filter FMin p xs)
-            Filter FMax p (x ': xs) = If (Cmp x p == GT || Cmp x p == EQ) (x ': (Filter FMax p xs)) (Filter FMax p xs)
+            Filter FMax p (x ': xs) = If (Cmp x p == GT) (x ': (Filter FMax p xs)) (Filter FMax p xs)
 
 type family DeleteFromList (e :: elem) (list :: [elem]) where
     DeleteFromList elem '[] = '[]
@@ -184,10 +185,19 @@ instance Sortable '[] where
     quicksort Empty = Empty
 
 instance (Sortable (Filter FMin p xs),
-          Sortable (Filter FMax p xs), FilterV FMin p xs, FilterV FMax p xs) => Sortable (p ': xs) where
-    quicksort (Ext p xs) = ((quicksort (less p xs)) `append` (Ext p Empty)) `append` (quicksort (more p xs))
-                           where less = filterV (Proxy::(Proxy FMin))
-                                 more = filterV (Proxy::(Proxy FMax))
+          Sortable (Filter FEq p xs),
+          Sortable (Filter FMax p xs),
+          FilterV FMin p xs,
+          FilterV FEq p xs,
+          FilterV FMax p xs) => Sortable (p ': xs) where
+    quicksort (Ext p xs) =
+      quicksort (less p xs) `append`
+      (Ext p $ equal p xs) `append`
+      quicksort (more p xs)
+
+      where less = filterV (Proxy::(Proxy FMin))
+            equal = filterV (Proxy::(Proxy FEq))
+            more = filterV (Proxy::(Proxy FMax))
 
 {- Filter out the elements less-than or greater-than-or-equal to the pivot -}
 class FilterV (f::Flag) p xs where
@@ -200,8 +210,12 @@ instance (Conder ((Cmp x p) == LT), FilterV FMin p xs) => FilterV FMin p (x ': x
     filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy ((Cmp x p) == LT)))
                                         (Ext x (filterV f p xs)) (filterV f p xs)
 
-instance (Conder (((Cmp x p) == GT) || ((Cmp x p) == EQ)), FilterV FMax p xs) => FilterV FMax p (x ': xs) where
-    filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy (((Cmp x p) == GT) || ((Cmp x p) == EQ))))
+instance (Conder ((Cmp x p) == GT), FilterV FMax p xs) => FilterV FMax p (x ': xs) where
+    filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy ((Cmp x p) == GT)))
+                                        (Ext x (filterV f p xs)) (filterV f p xs)
+
+instance (Conder ((Cmp x p) == EQ), FilterV FEq p xs) => FilterV FEq p (x ': xs) where
+    filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy ((Cmp x p) == EQ)))
                                         (Ext x (filterV f p xs)) (filterV f p xs)
 
 class Conder g where
