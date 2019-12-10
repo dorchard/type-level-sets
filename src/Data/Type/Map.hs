@@ -166,11 +166,13 @@ instance Sortable '[] where
 instance (Sortable (Filter FMin (k :-> v) xs)
          , Sortable (Filter FMax (k :-> v) xs)
          , FilterV FMin k v xs
+         , FilterV FEq  k v xs
          , FilterV FMax k v xs) => Sortable ((k :-> v) ': xs) where
     quicksort (Ext k v xs) =
-        quicksort (less k v xs) `append` Ext k v Empty `append` quicksort (more k v xs)
+        quicksort (less k v xs) `append` (Ext k v $ equal k v xs) `append` quicksort (more k v xs)
       where
         less = filterV (Proxy::(Proxy FMin))
+        equal = filterV (Proxy::(Proxy FEq))
         more = filterV (Proxy::(Proxy FMax))
 
 {- Filter out the elements less-than or greater-than-or-equal to the pivot -}
@@ -186,11 +188,17 @@ instance (Conder (Cmp x (k :-> v) == LT), FilterV FMin k v xs) => FilterV FMin k
           (Ext k' v' (filterV f k v xs))
           (filterV f k v xs)
 
-instance
-       (Conder ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ)), FilterV FMax k v xs)
+instance (Conder (Cmp x (k :-> v) == GT), FilterV FMax k v xs)
     => FilterV FMax k v (x ': xs) where
     filterV f@Proxy k v (Ext k' v' xs) =
-      cond (Proxy::(Proxy ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ))))
+      cond (Proxy::(Proxy (Cmp x (k :-> v) == GT)))
+           (Ext k' v' (filterV f k v xs))
+           (filterV f k v xs)
+
+instance (Conder (Cmp x (k :-> v) == EQ), FilterV FEq k v xs)
+    => FilterV FEq k v (x ': xs) where
+    filterV f@Proxy k v (Ext k' v' xs) =
+      cond (Proxy::(Proxy (Cmp x (k :-> v) == EQ)))
            (Ext k' v' (filterV f k v xs))
            (filterV f k v xs)
 
