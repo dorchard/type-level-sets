@@ -35,9 +35,20 @@ instance Show' (Set '[]) where
 instance (Show' (Set s), Show e) => Show' (Set (e ': s)) where
     show' (Ext e s) = ", " ++ show e ++ (show' s)
 
+instance Eq (Set '[]) where
+  (==) _ _ = True
 instance (Eq e, Eq (Set s)) => Eq (Set (e ': s)) where
     (Ext e m) == (Ext e' m') = e == e' && m == m'
 
+instance Ord (Set '[]) where
+  compare _ _ = EQ
+instance (Ord a, Ord (Set s)) => Ord (Set (a ': s)) where
+  compare (Ext a as) (Ext a' as') = case compare a a' of
+    EQ ->
+      compare as as'
+
+    other ->
+      other
 
 {-| At the type level, normalise the list form to the set form -}
 type AsSet s = Nub (Sort s)
