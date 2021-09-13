@@ -7,7 +7,7 @@ The implementation is similar to that shown in the paper.
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
              ConstraintKinds, IncoherentInstances #-}
 
-module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
+module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..), mapLength,
                       Combine, Combinable(..), Cmp,
                       Nubable, nub,
                       Lookup, Member, (:\), Split, split,
@@ -75,6 +75,11 @@ instance KnownSymbol k => Show (Var k) where
 data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
+
+{-| Length function -}
+mapLength :: Map n -> Int
+mapLength Empty = 0
+mapLength (Ext _ _ xs) = 1 + mapLength xs
 
 {-| Membership test a type class (predicate) -}
 class IsMember v t m where

@@ -1,5 +1,5 @@
 name:                   type-level-sets
-version:                0.8.9.0
+version:                0.8.10.0
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
@@ -68,10 +68,10 @@ author:                 Dominic Orchard
 maintainer:             Dominic Orchard
 stability:              experimental
 build-type:             Simple
-cabal-version:          >= 1.6
+cabal-version:          >= 1.10
 tested-with:            GHC >= 8.2.2
 
-extra-source-files:     examples/example.hs, examples/example2.hs, changelog.md
+extra-source-files:     examples/Example.hs, examples/Example2.hs, tests/hspec/MapSpec.hs, tests/hspec/Spec.hs, changelog.md
 
 
 source-repository head
@@ -88,3 +88,17 @@ library
 
   build-depends:        base < 5,
                         ghc-prim
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: ., tests/hspec
+  other-modules:
+    Examples.Example
+    Examples.Example2
+    MapSpec
+  build-depends:
+      type-level-sets
+    , hspec
+    , base
+  default-language: Haskell2010

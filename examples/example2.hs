@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds, TypeOperators, TypeFamilies, GADTs, StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+module Examples.Example2 where
+
 import GHC.TypeLits
 import Data.Type.Set
 
