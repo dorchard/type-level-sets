@@ -1,7 +1,8 @@
-This library provides type-level sets and finite maps to Haskell, with a value level counterpart, and operations for taking the union, computing
-subsets/submaps, and splitting sets/maps. This library was originally built based on
-"Embedding effect systems in Haskell" (Dominic Orchard, 
-Tomas Petricek <http://www.cl.cam.ac.uk/~dao29/publ/haskell14-effects.pdf>) to embed effect sets. 
+This library provides type-level sets and finite maps to Haskell, with value level counterpart, and operations for taking the union, computing
+subsets/submaps, and splitting sets/maps.
+
+This library was originally built based on "Embedding effect systems in Haskell" (Dominic Orchard, 
+Tomas Petricek <http://www.cs.kent.ac.uk/~dao7/publ/haskell14-effects.pdf>) to embed effect sets. 
 
 The following shows an example: 
 
