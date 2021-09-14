@@ -7,13 +7,14 @@ The implementation is similar to that shown in the paper.
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
              ConstraintKinds, IncoherentInstances #-}
 
-module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..), mapLength,
-                      Combine, Combinable(..), Cmp,
-                      Nubable, nub,
-                      Lookup, Member, (:\), Split, split,
-                      IsMember, lookp, Updatable, update,
-                      IsMap, AsMap, asMap,
-                      Submap, submap) where
+module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
+                        ext, empty, mapLength,
+                        Combine, Combinable(..), Cmp,
+                        Nubable, nub,
+                        Lookup, Member, (:\), Split, split,
+                        IsMember, lookp, Updatable, update,
+                        IsMap, AsMap, asMap,
+                        Submap, submap) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -75,6 +76,14 @@ instance KnownSymbol k => Show (Var k) where
 data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
+
+{-| Smart constructor which normalises the representation -}
+ext :: (Sortable ((k :-> v) ': m), Nubable (Sort ((k :-> v) ': m))) => Var k -> v -> Map m -> Map (AsMap ((k :-> v) ': m))
+ext k v m = asMap $ Ext k v m
+
+{-| Smart constructor to match `ext` (but doesn't do anything other than wrap Empty) -}
+empty :: Map '[]
+empty = Empty
 
 {-| Length function -}
 mapLength :: Map n -> Int

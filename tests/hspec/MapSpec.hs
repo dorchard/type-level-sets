@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
 
 module MapSpec where
 
@@ -8,6 +9,10 @@ import Examples.Example
 import Examples.Example2
 
 import Data.Type.Map
+
+-- Compilation test for smart constructors
+myMap2 :: Map '[ "w" ':-> Int, "z" ':-> Int]
+myMap2 = ext (Var :: (Var "w")) (2::Int) $ ext (Var :: (Var "z")) (4::Int) empty
 
 spec :: Spec
 spec = do
