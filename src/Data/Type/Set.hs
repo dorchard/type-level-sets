@@ -61,11 +61,16 @@ asSet x = nub (quicksort x)
 type IsSet s = (s ~ Nub (Sort s))
 
 {-| Useful properties to be able to refer to someties -}
-type SetProperties f = (Union f '[] ~ f, Split f '[] f,
-                        Union '[] f ~ f, Split '[] f f,
-                        Union f f ~ f, Split f f f,
-                        Unionable f '[], Unionable '[] f)
-
+type SetProperties (f :: [k]) =
+  ( Union f ('[] :: [k]) ~ f,
+    Split f ('[] :: [k]) f,
+    Union ('[] :: [k]) f ~ f,
+    Split ('[] :: [k]) f f,
+    Union f f ~ f,
+    Split f f f,
+    Unionable f ('[] :: [k]),
+    Unionable ('[] :: [k]) f
+  )
 {-- Union --}
 
 {-| Union of sets -}
