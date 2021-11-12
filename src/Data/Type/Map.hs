@@ -14,6 +14,7 @@ module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
                         Lookup, Member, (:\), Split, split,
                         IsMember, lookp, Updatable, update,
                         IsMap, AsMap, asMap,
+                        Sortable, quicksort,
                         Submap, submap) where
 
 import GHC.TypeLits
