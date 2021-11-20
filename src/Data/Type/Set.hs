@@ -81,6 +81,8 @@ type family (:++) (x :: [k]) (y :: [k]) :: [k] where
             '[]       :++ xs = xs
             (x ': xs) :++ ys = x ': (xs :++ ys)
 
+infixr 5 :++
+
 append :: Set s -> Set t -> Set (s :++ t)
 append Empty x = x
 append (Ext e xs) ys = Ext e (append xs ys)
