@@ -7,13 +7,14 @@ The implementation is similar to that shown in the paper.
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
              ConstraintKinds, IncoherentInstances #-}
 
-module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
+module Data.Type.Map (Mapping(..), Union, Unionable, union, append, Var(..), Map(..),
                         ext, empty, mapLength,
                         Combine, Combinable(..), Cmp,
                         Nubable, nub,
                         Lookup, Member, (:\), Split, split,
                         IsMember, lookp, Updatable, update,
                         IsMap, AsMap, asMap,
+                        Sortable, quicksort,
                         Submap, submap) where
 
 import GHC.TypeLits
