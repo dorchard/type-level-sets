@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds, TypeOperators, TypeFamilies, MultiParamTypeClasses #-}
 
-module Examples.Example where
+module Example where
 
 import GHC.TypeLits
 import Data.Type.Map

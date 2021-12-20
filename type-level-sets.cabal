@@ -71,7 +71,7 @@ build-type:             Simple
 cabal-version:          >= 1.10
 tested-with:            GHC >= 8.2.2
 
-extra-source-files:     examples/Example.hs, examples/Example2.hs, tests/hspec/MapSpec.hs, tests/hspec/Spec.hs, changelog.md
+extra-source-files:     changelog.md
 
 
 source-repository head
@@ -92,10 +92,10 @@ library
 test-suite tests
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  hs-source-dirs: ., tests/hspec
+  hs-source-dirs: examples, tests/hspec
   other-modules:
-    Examples.Example
-    Examples.Example2
+    Example
+    Example2
     MapSpec
   build-depends:
       type-level-sets
