@@ -238,13 +238,16 @@ type family Cmp (a :: k) (b :: k) :: Ordering
 {-| Membership of an element in a set, with an acommanying
     value-level function that returns a bool -}
 class Member a s where
-  member :: Proxy a -> Set s -> Bool
+  member  :: Proxy a -> Set s -> Bool
+  project :: Proxy a ->  Set s -> a
 
 instance {-# OVERLAPS #-} Member a (a ': s) where
   member _ (Ext x _) = True
+  project _ (Ext x _)  = x
 
 instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
   member a (Ext _ xs) = member a xs
+  project p (Ext _ xs) = project p xs
 
 type family MemberP a s :: Bool where
             MemberP a '[]      = False
