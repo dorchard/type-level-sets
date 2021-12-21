@@ -2,7 +2,7 @@
 
 module Example where
 
-import GHC.TypeLits
+import GHC.TypeLits ( Nat, CmpNat, type (+) )
 import Data.Type.Map
 
 -- Specify that key-value pairs on Ints combine to an Int

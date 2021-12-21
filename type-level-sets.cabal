@@ -97,6 +97,8 @@ test-suite tests
     Example
     Example2
     MapSpec
+  build-tool-depends:
+      hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
       type-level-sets
     , hspec

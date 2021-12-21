@@ -3,7 +3,7 @@
 
 module Example2 where
 
-import GHC.TypeLits
+import GHC.TypeLits ( Nat, CmpNat, type (+) )
 import Data.Type.Set
 
 type instance Cmp (Natural n) (Natural m) = CmpNat n m
