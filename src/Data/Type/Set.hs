@@ -7,7 +7,7 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
-                      Member(..), NonMember, MemberP(..)) where
+                      Elem(..), Member(..), NonMember) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -235,23 +235,19 @@ instance Conder False where
 
 type family Cmp (a :: k) (b :: k) :: Ordering
 
-{-| Membership of an element in a set, with an acommanying
-    value-level function that returns a bool -}
-class Member a s where
-  member  :: Proxy a -> Set s -> Bool
-  project :: Proxy a ->  Set s -> a
+{-| Access the value at a type present in a set. -}
+class Elem a s where
+  project :: Proxy a -> Set s -> a
 
-instance {-# OVERLAPS #-} Member a (a ': s) where
-  member _ (Ext x _) = True
+instance {-# OVERLAPS #-} Elem a (a ': s) where
   project _ (Ext x _)  = x
 
-instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
-  member a (Ext _ xs) = member a xs
+instance {-# OVERLAPPABLE #-} Elem a s => Elem a (b ': s) where
   project p (Ext _ xs) = project p xs
 
-type family MemberP a s :: Bool where
-            MemberP a '[]      = False
-            MemberP a (a ': s) = True
-            MemberP a (b ': s) = MemberP a s
+type family Member a s :: Bool where
+            Member a '[]      = False
+            Member a (a ': s) = True
+            Member a (b ': s) = Member a s
 
-type NonMember a s = MemberP a s ~ False
+type NonMember a s = Member a s ~ False
