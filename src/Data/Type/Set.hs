@@ -7,7 +7,7 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
-                      Elem(..), Member(..), NonMember) where
+                      Elem(..), Member(..), MemberP, NonMember) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -16,6 +16,7 @@ import Data.Type.Equality
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
+--type Set :: [k] -> Type
 data Set (n :: [k]) where
     {--| Construct an empty set -}
     Empty :: Set '[]
@@ -245,9 +246,26 @@ instance {-# OVERLAPS #-} Elem a (a ': s) where
 instance {-# OVERLAPPABLE #-} Elem a s => Elem a (b ': s) where
   project p (Ext _ xs) = project p xs
 
-type family Member a s :: Bool where
-            Member a '[]      = False
-            Member a (a ': s) = True
-            Member a (b ': s) = Member a s
+-- | Value level type list membership predicate: does the type 'a' come up in
+--   the type list 's'?
+class Member a s where
+  member :: Proxy a -> Set s -> Bool
 
-type NonMember a s = Member a s ~ False
+instance Member a '[] where
+  member _ Empty = False
+
+instance {-# OVERLAPS #-} Member a (a ': s) where
+  member _ (Ext x _)  = True
+
+instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
+  member p (Ext _ xs) = member p xs
+
+-- | Type level type list membership predicate: does the type 'a' come up in the
+--   type list 's'?
+--type MemberP :: k -> [k] -> Bool
+type family MemberP a s :: Bool where
+            MemberP a '[]      = False
+            MemberP a (a ': s) = True
+            MemberP a (b ': s) = MemberP a s
+
+type NonMember a s = MemberP a s ~ False
