@@ -246,7 +246,7 @@ instance {-# OVERLAPS #-} Elem a (a ': s) where
 instance {-# OVERLAPPABLE #-} Elem a s => Elem a (b ': s) where
   project p (Ext _ xs) = project p xs
 
--- | Value level type list membership predicate: does the type 'a' come up in
+-- | Value level type list membership predicate: does the type 'a' show up in
 --   the type list 's'?
 class Member a s where
   member :: Proxy a -> Set s -> Bool
@@ -260,7 +260,7 @@ instance {-# OVERLAPS #-} Member a (a ': s) where
 instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
   member p (Ext _ xs) = member p xs
 
--- | Type level type list membership predicate: does the type 'a' come up in the
+-- | Type level type list membership predicate: does the type 'a' show up in the
 --   type list 's'?
 --type MemberP :: k -> [k] -> Bool
 type family MemberP a s :: Bool where

@@ -5,8 +5,7 @@
 module MapSpec where
 
 import Test.Hspec
-import Example
-import Example2
+import qualified ExampleMap as Example
 
 import Data.Type.Map
 

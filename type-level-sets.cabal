@@ -94,9 +94,11 @@ test-suite tests
   main-is: Spec.hs
   hs-source-dirs: examples, tests/hspec
   other-modules:
-    Example
-    Example2
+    ExampleSet
+    ExampleSet2
+    ExampleMap
     MapSpec
+    SetSpec
   build-tool-depends:
       hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
