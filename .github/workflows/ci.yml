@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    types:
+    - opened
+    - synchronize
+
+env:
+  EXE_NAME: type-level-sets
+
+jobs:
+  ubuntu-cabal-test:
+    runs-on: ubuntu-latest
+    name: Ubuntu / GHC ${{ matrix.ghc }}, Cabal / test
+    strategy:
+      fail-fast: false  # don't stop if one job (= GHC version) fails
+      matrix:
+        cabal: ["3.6"]  # ghcup recommended as of 2021-12-21
+        ghc:
+        - "8.10"
+        - "9.0"
+        - "9.2"
+
+    steps:
+
+    # TODO: GHC decides to recompile based on timestamp, so cache isn't used
+    # Preferably GHC would work via hashes instead. Stack had this feature
+    # merged in Aug 2020.
+    # Upstream GHC issue: https://gitlab.haskell.org/ghc/ghc/-/issues/16495
+    # My issue on haskell/actions: https://github.com/haskell/actions/issues/41
+    # This also requires us to do a deep fetch, else we don't get the Git commit
+    # history we need to rewrite mod times.
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set all tracked file modification times to the time of their last commit
+      run: |
+        rev=HEAD
+        for f in $(git ls-tree -r -t --full-name --name-only "$rev") ; do
+            touch -d $(git log --pretty=format:%cI -1 "$rev" -- "$f") "$f";
+        done
+
+    - name: Setup Haskell build environment
+      id: setup-haskell-build-env
+      uses: haskell/actions/setup@v1
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - run: cabal freeze
+
+    - name: Cache Cabal build artifacts
+      uses: actions/cache@v2
+      with:
+        path: |
+          ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+          dist-newstyle
+        key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-${{ matrix.ghc }}
+
+    - run: cabal build
+
+    - name: Test
+      run: cabal test --test-show-details=streaming
+      env:
+        HSPEC_OPTIONS: --color
+
+  mac-cabal-test:
+    runs-on: macos-latest
+    name: Mac / GHC ${{ matrix.ghc }}, Cabal / test
+    strategy:
+      fail-fast: false  # don't stop if one job (= GHC version) fails
+      matrix:
+        cabal: ["3.6"]  # ghcup recommended as of 2021-12-02
+        ghc: ["9.0"]
+
+    steps:
+
+    # TODO figure out timestamp fixer on Mac (no Mac available to test)
+    - uses: actions/checkout@v2
+
+    - name: Setup Haskell build environment
+      id: setup-haskell-build-env
+      uses: haskell/actions/setup@v1
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - run: cabal freeze
+
+    - name: Cache Cabal build artifacts
+      uses: actions/cache@v2
+      with:
+        path: |
+          ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+          dist-newstyle
+        key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-${{ matrix.ghc }}
+
+    - name: Test
+      run: cabal test --test-show-details=streaming
+      env:
+        HSPEC_OPTIONS: --color
+
+  windows-cabal-build:
+    runs-on: windows-latest
+    name: Windows / GHC ${{ matrix.ghc }}, Cabal / test
+    strategy:
+      fail-fast: false  # don't stop if one job (= GHC version) fails
+      matrix:
+        cabal: ["3.6"]  # ghcup recommended as of 2021-12-02
+        ghc: ["9.0"]
+
+    steps:
+
+    # TODO can't do cache fixer on Windows b/c it's a Bash script...
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Setup Haskell build environment
+      id: setup-haskell-build-env
+      uses: haskell/actions/setup@v1
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - run: cabal freeze
+
+    - name: Cache Cabal build artifacts
+      uses: actions/cache@v2
+      with:
+        path: |
+          ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+          dist-newstyle
+        key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-${{ matrix.ghc }}
+
+    - name: Test
+      run: cabal test --test-show-details=streaming
+      env:
+        HSPEC_OPTIONS: --color

@@ -1,5 +1,5 @@
 name:                   type-level-sets
-version:                0.8.10.0
+version:                0.9.0.0
 synopsis:               Type-level sets and finite maps (with value-level counterparts)
 description:
    This package provides type-level sets (no duplicates, sorted to provide a normal form) via 'Set' and type-level
@@ -94,9 +94,13 @@ test-suite tests
   main-is: Spec.hs
   hs-source-dirs: examples, tests/hspec
   other-modules:
-    Example
-    Example2
+    ExampleSet
+    ExampleSet2
+    ExampleMap
     MapSpec
+    SetSpec
+  build-tool-depends:
+      hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
       type-level-sets
     , hspec

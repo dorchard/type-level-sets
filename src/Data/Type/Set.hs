@@ -7,7 +7,7 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
-                      Member(..), NonMember, MemberP(..)) where
+                      Elem(..), Member(..), MemberP, NonMember) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -16,6 +16,7 @@ import Data.Type.Equality
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
+--type Set :: [k] -> Type
 data Set (n :: [k]) where
     {--| Construct an empty set -}
     Empty :: Set '[]
@@ -235,20 +236,33 @@ instance Conder False where
 
 type family Cmp (a :: k) (b :: k) :: Ordering
 
-{-| Membership of an element in a set, with an acommanying
-    value-level function that returns a bool -}
-class Member a s where
-  member  :: Proxy a -> Set s -> Bool
-  project :: Proxy a ->  Set s -> a
+{-| Access the value at a type present in a set. -}
+class Elem a s where
+  project :: Proxy a -> Set s -> a
 
-instance {-# OVERLAPS #-} Member a (a ': s) where
-  member _ (Ext x _) = True
+instance {-# OVERLAPS #-} Elem a (a ': s) where
   project _ (Ext x _)  = x
 
-instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
-  member a (Ext _ xs) = member a xs
+instance {-# OVERLAPPABLE #-} Elem a s => Elem a (b ': s) where
   project p (Ext _ xs) = project p xs
 
+-- | Value level type list membership predicate: does the type 'a' show up in
+--   the type list 's'?
+class Member a s where
+  member :: Proxy a -> Set s -> Bool
+
+instance Member a '[] where
+  member _ Empty = False
+
+instance {-# OVERLAPS #-} Member a (a ': s) where
+  member _ (Ext x _)  = True
+
+instance {-# OVERLAPPABLE #-} Member a s => Member a (b ': s) where
+  member p (Ext _ xs) = member p xs
+
+-- | Type level type list membership predicate: does the type 'a' show up in the
+--   type list 's'?
+--type MemberP :: k -> [k] -> Bool
 type family MemberP a s :: Bool where
             MemberP a '[]      = False
             MemberP a (a ': s) = True

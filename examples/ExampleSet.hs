@@ -1,9 +1,9 @@
 {-# LANGUAGE DataKinds, TypeOperators, TypeFamilies, GADTs, StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Example2 where
+module ExampleSet where
 
-import GHC.TypeLits
+import GHC.TypeLits ( Nat, CmpNat, type (+) )
 import Data.Type.Set
 
 type instance Cmp (Natural n) (Natural m) = CmpNat n m
