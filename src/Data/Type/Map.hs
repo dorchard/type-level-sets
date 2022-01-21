@@ -5,7 +5,7 @@ The implementation is similar to that shown in the paper.
 {-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures,
              TypeFamilies, UndecidableInstances, MultiParamTypeClasses,
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
-             ConstraintKinds, IncoherentInstances #-}
+             ConstraintKinds, IncoherentInstances, FunctionalDependencies #-}
 
 module Data.Type.Map (Mapping(..), Union, Unionable, union, append, Var(..), Map(..),
                         ext, empty, mapLength,
@@ -92,7 +92,7 @@ mapLength Empty = 0
 mapLength (Ext _ _ xs) = 1 + mapLength xs
 
 {-| Membership test a type class (predicate) -}
-class IsMember v t m where
+class IsMember v t m | m v -> t where
   {-| Value-level lookup of elements from a map, via type class predicate -}
   lookp :: Var v -> Map m -> t
 
