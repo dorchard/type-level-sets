@@ -20,7 +20,7 @@ module Data.Type.Map (Mapping(..), Union, Unionable, union, append, Var(..), Map
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
-import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, (:++))
+import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, Filter', (:++))
 
 {- Throughout, type variables
    'k' ranges over "keys"
@@ -195,19 +195,30 @@ class FilterV (f::Flag) k v xs where
 instance FilterV f k v '[] where
     filterV _ k v Empty      = Empty
 
-instance (Conder (Cmp x (k :-> v) == LT), FilterV FMin k v xs) => FilterV FMin k v (x ': xs) where
-    filterV f@Proxy k v (Ext k' v' xs) =
-      cond (Proxy::(Proxy (Cmp x (k :-> v) == LT)))
-          (Ext k' v' (filterV f k v xs))
-          (filterV f k v xs)
+class FilterV' (f::Flag) k v k' v' xs (cmp :: Ordering) where
+    filterV' :: Proxy f -> Proxy cmp -> Var k -> v -> Var k' -> v' -> Map xs -> Map (Filter' f (k :-> v) (k' :-> v') xs cmp)
 
-instance
-       (Conder ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ)), FilterV FMax k v xs)
-    => FilterV FMax k v (x ': xs) where
-    filterV f@Proxy k v (Ext k' v' xs) =
-      cond (Proxy::(Proxy ((Cmp x (k :-> v) == GT) || (Cmp x (k :-> v) == EQ))))
-           (Ext k' v' (filterV f k v xs))
-           (filterV f k v xs)
+instance FilterV' f k v k' v' xs (Cmp k' k) => FilterV f k v ((k' :-> v') ': xs) where
+    filterV _ _ v (Ext _ v' xs) =
+      filterV' (Proxy :: Proxy f) (Proxy :: Proxy (Cmp k' k)) (Var :: Var k) v (Var :: Var k') v' xs
+
+instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs LT where
+    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMin) k v xs)
+
+instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs EQ where
+    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMin) k v xs
+
+instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs GT where
+    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMin) k v xs
+
+instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs LT where
+    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMax) k v xs
+
+instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs EQ where
+    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMax) k v xs)
+
+instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs GT where
+    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMax) k v xs)
 
 class Combinable t t' where
     combine :: t -> t' -> Combine t t'
@@ -230,16 +241,6 @@ instance {-# OVERLAPS #-}
        (Combinable v v', Nubable ((k :-> Combine v v') ': s))
     => Nubable ((k :-> v) ': (k :-> v') ': s) where
     nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
-
-
-class Conder g where
-    cond :: Proxy g -> Map s -> Map t -> Map (If g s t)
-
-instance Conder True where
-    cond _ s t = s
-
-instance Conder False where
-    cond _ s t = t
 
 
 {-| Splitting a union of maps, given the maps we want to split it into -}
