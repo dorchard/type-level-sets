@@ -6,8 +6,9 @@
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
-                      Delete(..), Proxy(..), remove, Remove, (:\),
-                      Elem(..), Member(..), MemberP, NonMember) where
+                      Delete, Proxy(..), remove, Remove, (:\),
+                      Elem(..), Member(..), MemberP, NonMember,
+                      TSet, TUnion, Intersection, Difference, Insert, SetProperties) where
 
 import GHC.TypeLits
 import Data.Type.Bool
@@ -60,6 +61,29 @@ asSet x = nub (quicksort x)
 
 {-| Predicate to check if in the set form -}
 type IsSet s = (s ~ Nub (Sort s))
+
+type family TSet l where
+  TSet s = Set (AsSet s)
+
+type family Insert a s where
+  Insert x (Set xs) = Set (Union '[x] xs)
+
+type family TUnion a b where
+  TUnion (Set '[]) s = s
+  TUnion s (Set '[]) = s
+  TUnion (Set xs) (Set ys) = Set (Union xs ys)
+
+type family Intersection a b where
+  Intersection (Set '[]) s = Set '[]
+  Intersection s (Set '[]) = Set '[]
+  Intersection (Set (x ': xs)) (Set ys) =
+    TUnion (If (MemberP x ys) (Set '[x]) (Set '[])) (Intersection (Set xs) (Delete x (Set ys)))
+
+type family Difference a b where
+  Difference a (Set '[]) = a
+  Difference (Set '[]) a = Set '[]
+  Difference (Set (x ': xs)) (Set ys) =
+    TUnion (If (MemberP x ys) (Set '[]) (Set '[x])) (Difference (Set xs) (Set ys))
 
 {-| Useful properties to be able to refer to someties -}
 type SetProperties (f :: [k]) =
