@@ -18,9 +18,10 @@ module Data.Type.Map (Mapping(..), Union, Unionable, union, append, Var(..), Map
                         Submap, submap) where
 
 import GHC.TypeLits
+import Data.Proxy (Proxy(..))
 import Data.Type.Bool
 import Data.Type.Equality
-import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, (:++))
+import Data.Type.Set (Cmp, Flag(..), Sort, Filter, (:++))
 
 {- Throughout, type variables
    'k' ranges over "keys"

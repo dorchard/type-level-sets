@@ -11,10 +11,9 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       TSet, TUnion, Intersection, Difference, Insert, SetProperties) where
 
 import GHC.TypeLits
+import Data.Proxy (Proxy(Proxy))
 import Data.Type.Bool
 import Data.Type.Equality
-
-data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
 --type Set :: [k] -> Type
