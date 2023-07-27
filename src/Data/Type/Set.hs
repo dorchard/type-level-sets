@@ -17,11 +17,15 @@ import GHC.Types
 data Proxy (p :: k) = Proxy
 
 -- Value-level 'Set' representation,  essentially a list
+
+type family Repr k (e :: k) :: Type
+type instance Repr Type e = e
+
 data Set (n :: [k]) where
     {--| Construct an empty set -}
     Empty :: Set '[]
     {--| Extend a set with an element -}
-    Ext :: e -> Set s -> Set (e ': s)
+    Ext :: Repr k e -> Set s -> Set (e ': s)
 
 instance Show (Set '[]) where
     show Empty = "{}"
@@ -134,10 +138,10 @@ instance Nubable '[] where
 instance Nubable '[e] where
     nub (Ext x Empty) = Ext x Empty
 
-instance Nubable (e ': s) => Nubable (e ': e ': s) where
+instance Nubable ((e :: Type) ': s) => Nubable (e ': e ': s) where
     nub (Ext _ (Ext e s)) = nub (Ext e s)
 
-instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
+instance {-# OVERLAPS #-} (Nub ((e :: Type) ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext e (Ext f s)) = Ext e (nub (Ext f s))
 
