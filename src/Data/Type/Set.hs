@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, DataKinds, KindSignatures, TypeOperators, TypeFamilies,
              MultiParamTypeClasses, FlexibleInstances, PolyKinds,
              FlexibleContexts, UndecidableInstances, ConstraintKinds,
-             ScopedTypeVariables, TypeInType #-}
+             ScopedTypeVariables, TypeInType, AllowAmbiguousTypes #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
@@ -12,6 +12,7 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
+import GHC.Types
 
 data Proxy (p :: k) = Proxy
 
@@ -49,11 +50,11 @@ asSet x = nub (quicksort x)
 {-| Predicate to check if in the set form -}
 type IsSet s = (s ~ Nub (Sort s))
 
-{-| Useful properties to be able to refer to someties -}
-type SetProperties f = (Union f '[] ~ f, Split f '[] f,
-                        Union '[] f ~ f, Split '[] f f,
+{-| Useful properties to be able to refer to sometimes -}
+type SetProperties (f :: [k]) = (Union f ('[] :: [k]) ~ f, Split f ('[] :: [k]) f,
+                        Union ('[] :: [k]) f ~ f, Split ('[] :: [k]) f f,
                         Union f f ~ f, Split f f f,
-                        Unionable f '[], Unionable '[] f)
+                        Unionable f ('[] :: [k]), Unionable ('[] :: [k]) f)
 
 {-- Union --}
 
@@ -153,6 +154,16 @@ instance {-# OVERLAPPABLE #-} Subset s t => Subset s (x ': t) where
 
 instance {-# OVERLAPS #-} Subset s t => Subset (x ': s) (x ': t) where
    subset (Ext x xs) = Ext x (subset xs)
+
+instance (Subset s t, Subset t v) => Subset s v where
+   subset xs = subset ((subset xs) :: Set t)
+
+data Witness (c :: Constraint) where
+    Witness :: c => Witness c
+
+class SubsetTransitivity s t v where
+  subsetTransitivity :: (Witness (Subset s t), Witness (Subset t v)) -> Witness (Subset s v)
+
 
 
 {-| Type-level quick sort for normalising the representation of sets -}
