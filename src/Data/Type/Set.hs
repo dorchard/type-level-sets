@@ -4,7 +4,7 @@
              ScopedTypeVariables, TypeInType #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
-                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Flag(..),
+                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Filter', Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
                       Elem(..), Member(..), MemberP, NonMember) where
@@ -183,8 +183,13 @@ data Flag = FMin | FMax
 
 type family Filter (f :: Flag) (p :: k) (xs :: [k]) :: [k] where
             Filter f p '[]       = '[]
-            Filter FMin p (x ': xs) = If (Cmp x p == LT) (x ': (Filter FMin p xs)) (Filter FMin p xs)
-            Filter FMax p (x ': xs) = If (Cmp x p == GT || Cmp x p == EQ) (x ': (Filter FMax p xs)) (Filter FMax p xs)
+            Filter f p (x ': xs) = Filter' f p x xs (Cmp x p)
+
+type family Filter' (f :: Flag) (p :: k) (x :: k) (xs :: [k]) cmp where
+            Filter' FMin p x xs 'LT = x ': Filter FMin p xs
+            Filter' FMin p x xs eqOrGt = Filter FMin p xs
+            Filter' FMax p x xs 'LT = Filter FMax p xs
+            Filter' FMax p x xs eqOrGt = x ': Filter FMax p xs
 
 type family DeleteFromList (e :: elem) (list :: [elem]) where
     DeleteFromList elem '[] = '[]
@@ -212,25 +217,32 @@ instance (Sortable (Filter FMin p xs),
 class FilterV (f::Flag) p xs where
     filterV :: Proxy f -> p -> Set xs -> Set (Filter f p xs)
 
+class FilterV' (f::Flag) p x xs (cmp :: Ordering) where
+    filterV' :: Proxy f -> Proxy cmp -> p -> x -> Set xs -> Set (Filter' f p x xs cmp)
+
 instance FilterV f p '[] where
     filterV _ p Empty      = Empty
 
-instance (Conder ((Cmp x p) == LT), FilterV FMin p xs) => FilterV FMin p (x ': xs) where
-    filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy ((Cmp x p) == LT)))
-                                        (Ext x (filterV f p xs)) (filterV f p xs)
+instance FilterV' f p x xs (Cmp x p) => FilterV f p (x ': xs) where
+    filterV _ p (Ext x xs) = filterV' (Proxy :: Proxy f) (Proxy :: Proxy (Cmp x p)) p x xs
 
-instance (Conder (((Cmp x p) == GT) || ((Cmp x p) == EQ)), FilterV FMax p xs) => FilterV FMax p (x ': xs) where
-    filterV f@Proxy p (Ext x xs) = cond (Proxy::(Proxy (((Cmp x p) == GT) || ((Cmp x p) == EQ))))
-                                        (Ext x (filterV f p xs)) (filterV f p xs)
+instance (FilterV 'FMin p xs) => FilterV' FMin p x xs LT where
+    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMin) p xs)
 
-class Conder g where
-    cond :: Proxy g -> Set s -> Set t -> Set (If g s t)
+instance (FilterV 'FMin p xs) => FilterV' FMin p x xs EQ where
+    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMin) p xs
 
-instance Conder True where
-    cond _ s t = s
+instance (FilterV 'FMin p xs) => FilterV' FMin p x xs GT where
+    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMin) p xs
 
-instance Conder False where
-    cond _ s t = t
+instance (FilterV 'FMax p xs) => FilterV' FMax p x xs LT where
+    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMax) p xs
+
+instance (FilterV 'FMax p xs) => FilterV' FMax p x xs EQ where
+    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMax) p xs)
+
+instance (FilterV 'FMax p xs) => FilterV' FMax p x xs GT where
+    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMax) p xs)
 
 {-| Open-family for the ordering operation in the sort -}
 
