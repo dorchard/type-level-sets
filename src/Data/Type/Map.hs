@@ -22,6 +22,8 @@ import Data.Type.Bool
 import Data.Type.Equality
 import Data.Type.Set (Cmp, Proxy(..), Flag(..), Sort, Filter, Filter', (:++))
 import Data.Kind (Type)
+import Rearrange.Rearrangeable
+import Rearrange.Typeclass
 
 {- Throughout, type variables
    'k' ranges over "keys"
@@ -78,6 +80,11 @@ instance KnownSymbol k => Show (Var k) where
 data Map (n :: [Mapping Symbol Type]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
+
+instance Rearrangeable Map where
+    rConsToHead (Ext x v _) = Ext x v
+    rTail (Ext _ _ xs) = xs
+    rEmpty = Empty
 
 {-| Smart constructor which normalises the representation -}
 ext :: (Sortable ((k :-> v) ': m), Nubable (Sort ((k :-> v) ': m))) => Var k -> v -> Map m -> Map (AsMap ((k :-> v) ': m))
@@ -173,53 +180,10 @@ type instance Cmp (k :: Symbol) (k' :: Symbol) = CmpSymbol k k'
 type instance Cmp (k :-> v) (k' :-> v') = CmpSymbol k k'
 
 {-| Value-level quick sort that respects the type-level ordering -}
-class Sortable xs where
-    quicksort :: Map xs -> Map (Sort xs)
+type Sortable xs = Permute Map xs (Sort xs)
 
-instance Sortable '[] where
-    quicksort Empty = Empty
-
-instance (Sortable (Filter FMin (k :-> v) xs)
-         , Sortable (Filter FMax (k :-> v) xs)
-         , FilterV FMin k v xs
-         , FilterV FMax k v xs) => Sortable ((k :-> v) ': xs) where
-    quicksort (Ext k v xs) =
-        quicksort (less k v xs) `append` Ext k v Empty `append` quicksort (more k v xs)
-      where
-        less = filterV (Proxy::(Proxy FMin))
-        more = filterV (Proxy::(Proxy FMax))
-
-{- Filter out the elements less-than or greater-than-or-equal to the pivot -}
-class FilterV (f::Flag) k v xs where
-    filterV :: Proxy f -> Var k -> v -> Map xs -> Map (Filter f (k :-> v) xs)
-
-instance FilterV f k v '[] where
-    filterV _ k v Empty      = Empty
-
-class FilterV' (f::Flag) k v k' v' xs (cmp :: Ordering) where
-    filterV' :: Proxy f -> Proxy cmp -> Var k -> v -> Var k' -> v' -> Map xs -> Map (Filter' f (k :-> v) (k' :-> v') xs cmp)
-
-instance FilterV' f k v k' v' xs (Cmp k' k) => FilterV f k v ((k' :-> v') ': xs) where
-    filterV _ _ v (Ext _ v' xs) =
-      filterV' (Proxy :: Proxy f) (Proxy :: Proxy (Cmp k' k)) (Var :: Var k) v (Var :: Var k') v' xs
-
-instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs LT where
-    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMin) k v xs)
-
-instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs EQ where
-    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMin) k v xs
-
-instance (FilterV 'FMin k v xs) => FilterV' FMin k v k' v' xs GT where
-    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMin) k v xs
-
-instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs LT where
-    filterV' _ _ k v k' v' xs = filterV (Proxy :: Proxy FMax) k v xs
-
-instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs EQ where
-    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMax) k v xs)
-
-instance (FilterV 'FMax k v xs) => FilterV' FMax k v k' v' xs GT where
-    filterV' _ _ k v k' v' xs = Ext k' v' (filterV (Proxy :: Proxy FMax) k v xs)
+quicksort :: Sortable xs => Map xs -> Map (Sort xs)
+quicksort = permute
 
 class Combinable t t' where
     combine :: t -> t' -> Combine t t'
@@ -243,36 +207,14 @@ instance {-# OVERLAPS #-}
     => Nubable ((k :-> v) ': (k :-> v') ': s) where
     nub (Ext k v (Ext k' v' s)) = nub (Ext k (combine v v') s)
 
-
 {-| Splitting a union of maps, given the maps we want to split it into -}
-class Split s t st where
-   -- where st ~ Union s t
-   split :: Map st -> (Map s, Map t)
+type Split s t st = (RDel Map st s, RDel Map st t)
 
-instance Split '[] '[] '[] where
-   split Empty = (Empty, Empty)
-
-instance {-# OVERLAPPABLE #-} Split s t st => Split (x ': s) (x ': t) (x ': st) where
-   split (Ext k v st) = let (s, t) = split st
-                        in (Ext k v s, Ext k v t)
-
-instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
-   split (Ext k v st) = let (s, t) = split st
-                        in  (Ext k v s, t)
-
-instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
-   split (Ext k v st) = let (s, t) = split st
-                        in  (s, Ext k v t)
+split :: (Split s t st) => Map st -> (Map s, Map t)
+split inp = (rDel inp, rDel inp)
 
 {-| Construct a submap 's' from a supermap 't' -}
-class Submap s t where
-   submap :: Map t -> Map s
+type Submap s t = RDel Map t s
 
-instance Submap '[] '[] where
-   submap xs = Empty
-
-instance {-# OVERLAPPABLE #-} Submap s t => Submap s (x ': t) where
-   submap (Ext _ _ xs) = submap xs
-
-instance {-# OVERLAPS #-} Submap s t => Submap  (x ': s) (x ': t) where
-   submap (Ext k v xs) = Ext k v (submap xs)
+submap :: (Submap s t) => Map t -> Map s
+submap = rDel
