@@ -4,7 +4,7 @@
              ScopedTypeVariables #-}
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
-                      Sort, Sortable, (:++), Split(..), Cmp, Filter, Filter', Flag(..),
+                      Sort, Sortable, (:++), split, Split, Cmp, Filter, Filter', Flag(..),
                       Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
                       Elem(..), Member(..), MemberP, NonMember) where
@@ -12,6 +12,8 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
+import Rearrange.Rearrangeable
+import Rearrange.Typeclass
 
 data Proxy (p :: k) = Proxy
 
@@ -22,6 +24,15 @@ data Set (n :: [k]) where
     Empty :: Set '[]
     {--| Extend a set with an element -}
     Ext :: e -> Set s -> Set (e ': s)
+
+instance Rearrangeable Set where
+    rConsToHead (Ext x _) = Ext x
+    rTail (Ext _ xs) = xs
+    rEmpty = Empty
+
+instance RearrangeableStar Set where
+    rCons = Ext
+    rHead (Ext x _) = x
 
 instance Show (Set '[]) where
     show Empty = "{}"
@@ -54,9 +65,9 @@ instance (Ord a, Ord (Set s)) => Ord (Set (a ': s)) where
 {-| At the type level, normalise the list form to the set form -}
 type AsSet s = Nub (Sort s)
 
-{-| At the value level, noramlise the list form to the set form -}
-asSet :: (Sortable s, Nubable (Sort s)) => Set s -> Set (AsSet s)
-asSet x = nub (quicksort x)
+{-| At the value level, normalise the list form to the set form -}
+asSet :: (RDel Set s (AsSet s)) => Set s -> Set (AsSet s)
+asSet = rDel
 
 {-| Predicate to check if in the set form -}
 type IsSet s = (s ~ Nub (Sort s))
@@ -77,8 +88,11 @@ type SetProperties (f :: [k]) =
 {-| Union of sets -}
 type Union s t = Nub (Sort (s :++ t))
 
+{- Note: nub in the original definition, when given a set containing two elements of the
+         same type, uses the later one. rearrangements uses the earlier one.
+         To keep this definition, we utilise nub and quicksort rather than rDel directly. -}
 union :: (Unionable s t) => Set s -> Set t -> Set (Union s t)
-union s t = nub (quicksort (append s t))
+union s t = nub $ quicksort (append s t)
 
 type Unionable s t = (Sortable (s :++ t), Nubable (Sort (s :++ t)))
 
@@ -113,24 +127,11 @@ instance {-# OVERLAPPABLE #-} (((y : xs) :\ x) ~ (y : (xs :\ x)), Remove xs x)
   remove (Ext y xs) (x@Proxy) = Ext y (remove xs x)
 
 {-| Splitting a union a set, given the sets we want to split it into -}
-class Split s t st where
-   -- where st ~ Union s t
-   split :: Set st -> (Set s, Set t)
+type Split s t st = (RDel Set st s, RDel Set st t)
 
-instance Split '[] '[] '[] where
-   split Empty = (Empty, Empty)
-
-instance {-# OVERLAPPABLE #-} Split s t st => Split (x ': s) (x ': t) (x ': st) where
-   split (Ext x st) = let (s, t) = split st
-                      in (Ext x s, Ext x t)
-
-instance {-# OVERLAPS #-} Split s t st => Split (x ': s) t (x ': st) where
-   split (Ext x st) = let (s, t) = split st
-                      in  (Ext x s, t)
-
-instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
-   split (Ext x st) = let (s, t) = split st
-                      in  (s, Ext x t)
+split :: (Split s t st) =>
+  Set st -> (Set s, Set t)
+split inp = (rDel inp, rDel inp)
 
 {-| Remove duplicates from a sorted list -}
 type family Nub t where
@@ -141,7 +142,10 @@ type family Nub t where
 
 {-| Value-level counterpart to the type-level 'Nub'
     Note: the value-level case for equal types is not define here,
-          but should be given per-application, e.g., custom 'merging' behaviour may be required -}
+          but should be given per-application, e.g., custom 'merging' behaviour may be required.
+    Note: rearrangements are not used here since the original behaviour of Nubable
+          assumes that if there are two equal elements, the later one is used. The
+          rearrangements library assumes the opposite, so they are incompatible. -}
 
 class Nubable t where
     nub :: Set t -> Set (Nub t)
@@ -159,20 +163,9 @@ instance {-# OVERLAPS #-} (Nub (e ': f ': s) ~ (e ': Nub (f ': s)),
               Nubable (f ': s)) => Nubable (e ': f ': s) where
     nub (Ext e (Ext f s)) = Ext e (nub (Ext f s))
 
-
-{-| Construct a subsetset 's' from a superset 't' -}
-class Subset s t where
-   subset :: Set t -> Set s
-
-instance Subset '[] '[] where
-   subset xs = Empty
-
-instance {-# OVERLAPPABLE #-} Subset s t => Subset s (x ': t) where
-   subset (Ext _ xs) = subset xs
-
-instance {-# OVERLAPS #-} Subset s t => Subset (x ': s) (x ': t) where
-   subset (Ext x xs) = Ext x (subset xs)
-
+type Subset s t = RDel Set t s
+subset :: (Subset s t) => Set t -> Set s
+subset = rDel
 
 {-| Type-level quick sort for normalising the representation of sets -}
 type family Sort (xs :: [k]) :: [k] where
@@ -201,48 +194,10 @@ type family Delete elem set where
     Delete elem (Set xs) = Set (DeleteFromList elem xs)
 
 {-| Value-level quick sort that respects the type-level ordering -}
-class Sortable xs where
-    quicksort :: Set xs -> Set (Sort xs)
+type Sortable xs = Permute Set xs (Sort xs)
 
-instance Sortable '[] where
-    quicksort Empty = Empty
-
-instance (Sortable (Filter FMin p xs),
-          Sortable (Filter FMax p xs), FilterV FMin p xs, FilterV FMax p xs) => Sortable (p ': xs) where
-    quicksort (Ext p xs) = ((quicksort (less p xs)) `append` (Ext p Empty)) `append` (quicksort (more p xs))
-                           where less = filterV (Proxy::(Proxy FMin))
-                                 more = filterV (Proxy::(Proxy FMax))
-
-{- Filter out the elements less-than or greater-than-or-equal to the pivot -}
-class FilterV (f::Flag) p xs where
-    filterV :: Proxy f -> p -> Set xs -> Set (Filter f p xs)
-
-class FilterV' (f::Flag) p x xs (cmp :: Ordering) where
-    filterV' :: Proxy f -> Proxy cmp -> p -> x -> Set xs -> Set (Filter' f p x xs cmp)
-
-instance FilterV f p '[] where
-    filterV _ p Empty      = Empty
-
-instance FilterV' f p x xs (Cmp x p) => FilterV f p (x ': xs) where
-    filterV _ p (Ext x xs) = filterV' (Proxy :: Proxy f) (Proxy :: Proxy (Cmp x p)) p x xs
-
-instance (FilterV 'FMin p xs) => FilterV' FMin p x xs LT where
-    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMin) p xs)
-
-instance (FilterV 'FMin p xs) => FilterV' FMin p x xs EQ where
-    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMin) p xs
-
-instance (FilterV 'FMin p xs) => FilterV' FMin p x xs GT where
-    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMin) p xs
-
-instance (FilterV 'FMax p xs) => FilterV' FMax p x xs LT where
-    filterV' _ _ p x xs = filterV (Proxy :: Proxy FMax) p xs
-
-instance (FilterV 'FMax p xs) => FilterV' FMax p x xs EQ where
-    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMax) p xs)
-
-instance (FilterV 'FMax p xs) => FilterV' FMax p x xs GT where
-    filterV' _ _ p x xs = Ext x (filterV (Proxy :: Proxy FMax) p xs)
+quicksort :: (Sortable xs) => Set xs -> Set (Sort xs)
+quicksort = permute
 
 {-| Open-family for the ordering operation in the sort -}
 
