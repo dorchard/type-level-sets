@@ -136,7 +136,7 @@ type IsMap s = (s ~ Nub (Sort s))
 {-| At the type level, normalise the list form to the map form -}
 type AsMap s = Nub (Sort s)
 
-{-| At the value level, noramlise the list form to the map form -}
+{-| At the value level, normalise the list form to the map form -}
 asMap :: (Sortable s, Nubable (Sort s)) => Map s -> Map (AsMap s)
 asMap x = nub (quicksort x)
 

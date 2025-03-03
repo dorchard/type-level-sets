@@ -66,8 +66,8 @@ instance (Ord a, Ord (Set s)) => Ord (Set (a ': s)) where
 type AsSet s = Nub (Sort s)
 
 {-| At the value level, normalise the list form to the set form -}
-asSet :: (RDel Set s (AsSet s)) => Set s -> Set (AsSet s)
-asSet = rDel
+asSet :: (Sortable s, Nubable (Sort s)) => Set s -> Set (AsSet s)
+asSet x = nub (quicksort x)
 
 {-| Predicate to check if in the set form -}
 type IsSet s = (s ~ Nub (Sort s))
