@@ -65,7 +65,10 @@ instance (Ord a, Ord (Set s)) => Ord (Set (a ': s)) where
 {-| At the type level, normalise the list form to the set form -}
 type AsSet s = Nub (Sort s)
 
-{-| At the value level, normalise the list form to the set form -}
+{-| At the value level, normalise the list form to the set form.
+    Note: in theory, this could be replaced with a call to rDel
+          mapping from a Set s to a Set (AsSet s).
+          However, nub must be used due to note [NubOrdering]. -}
 asSet :: (Sortable s, Nubable (Sort s)) => Set s -> Set (AsSet s)
 asSet x = nub (quicksort x)
 
@@ -88,9 +91,7 @@ type SetProperties (f :: [k]) =
 {-| Union of sets -}
 type Union s t = Nub (Sort (s :++ t))
 
-{- Note: nub in the original definition, when given a set containing two elements of the
-         same type, uses the later one. rearrangements uses the earlier one.
-         To keep this definition, we utilise nub and quicksort rather than rDel directly. -}
+{- Note: nub must be used due to note [NubOrdering]. -}
 union :: (Unionable s t) => Set s -> Set t -> Set (Union s t)
 union s t = nub $ quicksort (append s t)
 
@@ -143,9 +144,14 @@ type family Nub t where
 {-| Value-level counterpart to the type-level 'Nub'
     Note: the value-level case for equal types is not define here,
           but should be given per-application, e.g., custom 'merging' behaviour may be required.
-    Note: rearrangements are not used here since the original behaviour of Nubable
+    Note: [NubOrdering]
+          rearrangements are not used here since the original behaviour of Nubable
           assumes that if there are two equal elements, the later one is used. The
-          rearrangements library assumes the opposite, so they are incompatible. -}
+          rearrangements library assumes the opposite, so they are incompatible.
+          Furthermore, a user could define a custom merging behaviour for nub which
+          would not be preserved by rDel.
+          There are some definitions which could be rewritten to use rDel if this
+          was not the case, such as asSet. -}
 
 class Nubable t where
     nub :: Set t -> Set (Nub t)

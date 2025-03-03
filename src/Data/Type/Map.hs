@@ -136,7 +136,11 @@ type IsMap s = (s ~ Nub (Sort s))
 {-| At the type level, normalise the list form to the map form -}
 type AsMap s = Nub (Sort s)
 
-{-| At the value level, normalise the list form to the map form -}
+{-| At the value level, normalise the list form to the map form.
+    Note: in theory, this could be replaced with a call to rDel
+          mapping from a Map s to a Map (AsMap s).
+          However, nub must be used due to note [NubOrdering]
+          (in `Data.Type.Set`). -}
 asMap :: (Sortable s, Nubable (Sort s)) => Map s -> Map (AsMap s)
 asMap x = nub (quicksort x)
 
@@ -188,6 +192,8 @@ quicksort = permute
 class Combinable t t' where
     combine :: t -> t' -> Combine t t'
 
+{-| Value-level counterpart to the type-level 'Nub'
+    See the notes on `nub` in `Data.Type.Set`. -}
 class Nubable t where
     nub :: Map t -> Map (Nub t)
 
