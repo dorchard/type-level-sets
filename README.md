@@ -3,6 +3,7 @@ subsets/submaps, and splitting sets/maps.
 
 This library was originally built based on "Embedding effect systems in Haskell" (Dominic Orchard, 
 Tomas Petricek <http://www.cs.kent.ac.uk/~dao7/publ/haskell14-effects.pdf>) to embed effect sets. 
+Thanks to major contributions from @finnbar in 2025 to simplify the approach using [rearrangements](https://github.com/finnbar/rearrangements).
 
 The following shows an example: 
 
