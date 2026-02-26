@@ -8,6 +8,7 @@ Thanks to major contributions from @finnbar in 2025 to simplify the approach usi
 The following shows an example: 
 
 	{-# LANGUAGE DataKinds, TypeOperators, TypeFamilies, MultiParamTypeClasses #-}
+	{-# LANGUAGE TypeApplications #-}
         import Data.Type.Map
 	
         -- Specifies how to combine duplicate key-value pairs for Int values
@@ -16,14 +17,14 @@ The following shows an example:
            combine x y = x + y
 
         foo :: Map '["x" :-> Int, "z" :-> Bool, "w" :-> Int]
-        foo = Ext (Var :: (Var "x")) 2 
-            $ Ext (Var :: (Var "z")) True 
-            $ Ext (Var :: (Var "w")) 5
+        foo = Ext (Var @"x") 2 
+            $ Ext (Var @"z") True 
+            $ Ext (Var @"w") 5
 	      Empty
 
         bar :: Map '["y" :-> Int, "w" :-> Int]
-        bar = Ext (Var :: (Var "y")) 3
-            $ Ext (Var :: (Var "w")) 1
+        bar = Ext (Var @"y") 3
+            $ Ext (Var @"w") 1
             $ Empty 
 
         -- foobar :: Map '["w" :-> Int, "x" :-> Int, "y" :-> Int, "z" :-> Bool]

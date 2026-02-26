@@ -1,3 +1,11 @@
+# v0.9.1.0
+- Expanded test suite to cover README examples
+- Added tests for Map union with Combine behavior
+- Added tests for Set examples with Natural numbers
+- Uses [rearrangements](https://github.com/finnbar/rearrangements) library to simplify the implementation.
+- Migrated examples from explicit type annotations to `TypeApplications` syntax (e.g. `Var @"x"`).
+- Updated to GHC 9.8
+
 # v0.9.0.0
 - GHC 9.2 support
 - Add Elem typeclass to retrieve the value at a type in a set
