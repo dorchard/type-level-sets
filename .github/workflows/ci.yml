@@ -34,7 +34,7 @@ jobs:
     # My issue on haskell/actions: https://github.com/haskell/actions/issues/41
     # This also requires us to do a deep fetch, else we don't get the Git commit
     # history we need to rewrite mod times.
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set all tracked file modification times to the time of their last commit
@@ -54,7 +54,7 @@ jobs:
     - run: cabal freeze
 
     - name: Cache Cabal build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
@@ -82,7 +82,7 @@ jobs:
     steps:
 
     # TODO figure out timestamp fixer on Mac (no Mac available to test)
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Setup Haskell build environment
       id: setup-haskell-build-env
@@ -94,7 +94,7 @@ jobs:
     - run: cabal freeze
 
     - name: Cache Cabal build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
@@ -120,7 +120,7 @@ jobs:
     steps:
 
     # TODO can't do cache fixer on Windows b/c it's a Bash script...
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -134,7 +134,7 @@ jobs:
     - run: cabal freeze
 
     - name: Cache Cabal build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ${{ steps.setup-haskell-build-env.outputs.cabal-store }}

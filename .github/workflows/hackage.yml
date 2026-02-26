@@ -27,7 +27,7 @@ jobs:
     # My issue on haskell/actions: https://github.com/haskell/actions/issues/41
     # This also requires us to do a deep fetch, else we don't get the Git commit
     # history we need to rewrite mod times.
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set all tracked file modification times to the time of their last commit
@@ -41,7 +41,7 @@ jobs:
       run: rm -rf $HOME/.ghcup/ghc/${{ env.ghc }}
 
     - name: Cache GHC ${{ env.ghc }}
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ~/.ghcup/ghc/${{ env.ghc }}
         key: haddock-${{ env.ghc }}-ghc
@@ -59,7 +59,7 @@ jobs:
     - run: cabal freeze
 
     - name: Cache Cabal build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cabal/store
@@ -71,14 +71,14 @@ jobs:
     - run: cabal sdist
 
     - name: Upload Hackage sdist
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         path: dist-newstyle/sdist/${{ env.EXE_NAME }}-*.tar.gz
         name: ${{ env.EXE_NAME }}-sdist-${{ github.sha }}.tar.gz
         if-no-files-found: error
 
     - name: Upload Hackage Haddock docs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         path: dist-newstyle/${{ env.EXE_NAME }}-*-docs.tar.gz
         name: ${{ env.EXE_NAME }}-hackage-haddocks-${{ github.sha }}.tar.gz
