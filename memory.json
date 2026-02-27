@@ -1,31 +1,40 @@
 {
-  "last_run": "2026-02-26T10:57:00Z",
-  "run_id": "22439018301",
-  "tasks_run": ["task1", "task7", "task11"],
+  "last_run": "2026-02-27T02:22:36Z",
+  "run_id": "22470023815",
+  "tasks_run": ["task6", "task8", "task11"],
   "issue_cursor": "Y3Vyc29yOnYyOpK0MjAxNi0wMy0xN1QxNjo1MDoyMlrOCHFFEg==",
   "comments_made": [
     {"issue": 13, "date": "2026-02-26", "topic": "multiset kind mismatch workarounds"}
   ],
+  "pr_comments_made": [
+    {"pr": 15, "date": "2026-02-27", "topic": "stale nudge - asked author if still interested, noted merge conflicts"}
+  ],
   "labels_applied": [5, 11, 13, 14, 16, 21, 25],
   "welcomed_contributors": [],
   "fix_attempts": [],
-  "improvement_proposals": [],
+  "improvement_proposals": [
+    {"description": "Suggested publishing v0.9.1.0 to Hackage + GitHub release tag", "date": "2026-02-27", "issue": "~42 (verify next run)"}
+  ],
   "monthly_summary_issue": {
-    "number": "created-2026-02",
+    "number": 39,
     "month": "2026-02"
   },
-  "stale_pr_nudges": [],
-  "issues_to_revisit": [
-    {"number": 11, "reason": "Should be closed - maintainer said so in 2022"}
+  "stale_pr_nudges": [
+    {"pr": 15, "date": "2026-02-27", "note": "Nudged @bch29 about stale PR, merge conflicts with main"}
   ],
+  "issues_to_revisit": [],
   "open_prs": [
-    {"number": 36, "title": "GHC 9.8.4 + rearrangements", "updated": "2025-03-03"},
-    {"number": 15, "title": "Data.Type.Functor.Map", "updated": "2021-09-13"}
+    {"number": 15, "title": "Add Data.Type.Functor.Map", "updated": "2021-09-13", "note": "has merge conflicts, nudged author 2026-02-27"}
+  ],
+  "merged_prs": [
+    {"number": 36, "title": "GHC 9.8.4 + rearrangements", "merged": "2026-02-26"},
+    {"number": 40, "title": "More tests from examples", "merged": "2026-02-26"},
+    {"number": 41, "title": "Bump version to 0.9.1.0 + changelog + TypeApplications", "merged": "2026-02-26"}
   ],
   "future_work": [
-    "Comment on issues #5, #14, #16, #21, #25 if useful",
-    "Investigate compilation performance issue #17 in depth",
-    "Check PR #36 CI status",
-    "Consider release prep if PR #36 merges"
+    "Verify Hackage release issue number (expected ~#42)",
+    "Comment on issue #16 (alphabetical Cmp) if useful",
+    "Comment on issue #21 (Sum/Variant) - check if PR #15 context helps",
+    "Investigate issue #17 (compilation performance)"
   ]
 }
