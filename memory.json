@@ -1,19 +1,21 @@
 {
-  "last_run": "2026-02-27T02:22:36Z",
-  "run_id": "22470023815",
-  "tasks_run": ["task6", "task8", "task11"],
+  "last_run": "2026-02-28T02:22:11Z",
+  "run_id": "22511298511",
+  "tasks_run": ["task1", "task7", "task11"],
   "issue_cursor": "Y3Vyc29yOnYyOpK0MjAxNi0wMy0xN1QxNjo1MDoyMlrOCHFFEg==",
   "comments_made": [
-    {"issue": 13, "date": "2026-02-26", "topic": "multiset kind mismatch workarounds"}
+    {"issue": 13, "date": "2026-02-26", "topic": "multiset kind mismatch workarounds"},
+    {"issue": 17, "date": "2026-02-28", "topic": "Filter is already O(n) via Filter', Sort is O(n^2), suggested v0.9.1.0"},
+    {"issue": 16, "date": "2026-02-28", "topic": "TypeName/Generic approach is best available, showed how to add instances for external types"}
   ],
   "pr_comments_made": [
     {"pr": 15, "date": "2026-02-27", "topic": "stale nudge - asked author if still interested, noted merge conflicts"}
   ],
-  "labels_applied": [5, 11, 13, 14, 16, 21, 25],
+  "labels_applied": [5, 11, 13, 14, 16, 17, 21, 25],
   "welcomed_contributors": [],
   "fix_attempts": [],
   "improvement_proposals": [
-    {"description": "Suggested publishing v0.9.1.0 to Hackage + GitHub release tag", "date": "2026-02-27", "issue": "~42 (verify next run)"}
+    {"description": "Suggested publishing v0.9.1.0 to Hackage + GitHub release tag", "date": "2026-02-27", "issue": 42}
   ],
   "monthly_summary_issue": {
     "number": 39,
@@ -24,7 +26,7 @@
   ],
   "issues_to_revisit": [],
   "open_prs": [
-    {"number": 15, "title": "Add Data.Type.Functor.Map", "updated": "2021-09-13", "note": "has merge conflicts, nudged author 2026-02-27"}
+    {"number": 15, "title": "Add Data.Type.Functor.Map", "updated": "2026-02-27", "note": "has merge conflicts, nudged author 2026-02-27"}
   ],
   "merged_prs": [
     {"number": 36, "title": "GHC 9.8.4 + rearrangements", "merged": "2026-02-26"},
@@ -32,9 +34,8 @@
     {"number": 41, "title": "Bump version to 0.9.1.0 + changelog + TypeApplications", "merged": "2026-02-26"}
   ],
   "future_work": [
-    "Verify Hackage release issue number (expected ~#42)",
-    "Comment on issue #16 (alphabetical Cmp) if useful",
-    "Comment on issue #21 (Sum/Variant) - check if PR #15 context helps",
-    "Investigate issue #17 (compilation performance)"
+    "Comment on issue #21 (Sum/Variant) - assess feasibility and connection to PR #15",
+    "Investigate whether changelog/docs improvement warranted post-v0.9.1.0",
+    "Monitor PR #15 for author response to nudge"
   ]
 }
