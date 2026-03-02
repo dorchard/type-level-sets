@@ -5,7 +5,7 @@
 
 module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Sort, Sortable, (:++), split, Split, Cmp, Filter, Filter', Flag(..),
-                      Nub, Nubable(..), AsSet, asSet, IsSet, Subset(..),
+                      Nub, Nubable(..), AsSet, asSet, IsSet, SetProperties, Subset(..),
                       Delete(..), Proxy(..), remove, Remove, (:\),
                       Elem(..), Member(..), MemberP, NonMember) where
 
@@ -75,7 +75,11 @@ asSet x = nub (quicksort x)
 {-| Predicate to check if in the set form -}
 type IsSet s = (s ~ Nub (Sort s))
 
-{-| Useful properties to be able to refer to someties -}
+{-| Useful set-theoretic identity constraints for a set @f@.
+    Bundles facts such as @Union f '[] ~ f@, @Union '[] f ~ f@, and @Union f f ~ f@,
+    along with the corresponding 'Unionable' instances (which in turn supply 'Sortable'
+    and 'Nubable' witnesses).  Useful for reducing boilerplate in function constraints
+    when you need to work with a set and the empty set, or union a set with itself. -}
 type SetProperties (f :: [k]) =
   ( Union f ('[] :: [k]) ~ f,
     Split f ('[] :: [k]) f,
